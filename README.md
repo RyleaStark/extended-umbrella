@@ -1,17 +1,39 @@
-## Umbrel Community App Store Template
+# 🌂 Extended Umbrella – Optimized Umbrel Community Store
 
-This repository is a template to create an Umbrel Community App Store. These additional app stores allow developers to distribute applications without submitting to the [Official Umbrel App Store](https://github.com/getumbrel/umbrel-apps).
+Welcome to **Extended Umbrella**, a community-powered app store designed to unlock the **full hardware potential** of your Umbrel server.
 
-## How to use:
+Whether you're running an Intel NUC, a custom x86 build, or a powerhouse server, Extended Umbrella delivers apps tailored to make the most of your hardware.
 
-1. Start by clicking the "Use this template" button located above.
-2. Assign an ID and name to your app store within the `umbrel-app-store.yml` file. This file specifies two important attributes:
-    - `id` - Acts as a unique prefix for every app within your Community App Store. You must start your application's ID with your app store's ID. For instance, in this template, the app store ID is `sparkles`, and there's an app named `hello world`. Consequently, the app's ID should be: `sparkles-hello-world`.
-    - `name` - This is the name of the Community App Store displayed in the umbrelOS UI.
-3. Change the name of the `sparkles-hello-world` folder to match your app's ID. The app ID is for you to decide. For example, if your app store ID is `whistles`, and your app is named My Video Downloader, you could set its app ID to `whistles-my-video-downloader`, and rename the folder accordingly.
-4. Next, enter your app's listing details in the `whistles-my-video-downloader/umbrel-app.yml`. These are displayed in the umbrelOS UI.
-5. Include the necessary Docker services in `whistles-my-video-downloader/docker-compose.yml`.
-6. That's it! Your Community App Store, featuring your unique app, is now set up and ready to go. To use your Community App Store, you can add its GitHub url the umbrelOS user interface as shown in the following demo:
+---
 
+## 🚀 Why Extended Umbrella?
 
-https://user-images.githubusercontent.com/10330103/197889452-e5cd7e96-3233-4a09-b475-94b754adc7a3.mp4
+The official Umbrel App Store is great for general-purpose apps, but sometimes you want ⚡ **Hardware-optimized support**.
+
+## 🧱 How to Add Extended Umbrella to Umbrel
+
+To add Extended Umbrella to your Umbrel instance via the App Store:
+
+```bash
+https://github.com/RyleaStark/extended-umbrella.git
+```
+
+---
+
+## 🧩 Apps in This Store
+
+| App Name         | Description                         |
+|------------------|-------------------------------------|
+| `qsv-homebridge` | Homebridge with Intel QSV support   |
+
+---
+
+## 🙌 Credits
+
+Maintained by [@RyleaStark](https://github.com/youruserRyleaStarkname).  
+
+---
+
+## 🖤 Support the Project
+
+If you find this useful, consider giving the repo a ⭐ or sharing it with fellow homelabbers.

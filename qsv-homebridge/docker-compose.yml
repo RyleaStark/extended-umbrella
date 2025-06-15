@@ -1,0 +1,13 @@
+version: "3.7"
+
+services:
+  server:
+    image: homebridge/homebridge:2025-05-16@sha256:90e03ebaa909fb7fc98334245ba9b70c9c42d46aacbc549004a66e53bcd676de
+    # container runs as root
+    network_mode: host
+    # available at port 8581
+    volumes:
+      - ${APP_DATA_DIR}/data/qsv-homebridge:/homebridge
+    devices:
+      - /dev/dri:/dev/dri
+    restart: on-failure
