@@ -1,10 +1,10 @@
 manifestVersion: 1
-id: extended-embrella-qsv-homebridge
+id: extended-umbrella-qsv-homebridge
 category: automation
-name: "Homebridge with Intel iGPU/QSV"
-version: "1.9.0-2025-05-16"
+name: "Homebridge (iGPU)"
+version: "2025-06-10"
 tagline: "HomeKit support for the impatient"
-icon: https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/icon.svg?raw=true
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/icon.svg
 description: >-
   Bringing HomeKit support where there is none. Homebridge allows you to integrate with smart home devices that do not natively support HomeKit.
   There are over 2000 Homebridge plugins supporting thousands of different smart accessories.
@@ -19,15 +19,15 @@ repo: https://github.com/homebridge/homebridge
 support: https://github.com/homebridge/homebridge/issues
 port: 8581
 gallery:
-  - https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/1.jpg?raw=true
-  - https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/2.jpg?raw=true
-  - https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/3.jpg?raw=true
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/1.jpg
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/2.jpg
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/3.jpg
 path: ""
 defaultUsername: ""
 defaultPassword: ""
 torOnly: false
 releaseNotes: >-
-  This release updates the Homebridge UI to v4.73.0 and NodeJS to v22.15.1.
+  Updates docker release tag to 2025-06-10
 
 
   Full release notes can be found at https://github.com/homebridge/homebridge/releases
