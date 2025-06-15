@@ -1,7 +1,7 @@
 manifestVersion: 1
 id: qsv-homebridge
 category: automation
-name: "Homebridge (Intel iGPU/QSV)"
+name: "Homebridge with Intel iGPU/QSV"
 version: "1.9.0-2025-05-16"
 tagline: "HomeKit support for the impatient"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/7075c04c92c4c058bcd187f5dbfd721a67aca777/qsv-homebridge/gallery/icon.svg
@@ -12,23 +12,6 @@ description: >-
 
   This version of Homebridge for Umbrel adds Intel QuickSync Video to the container, allowing you to utilize hardware video encoding and decoding on compatible x86 Umbrel Devices.
   Your server must have the Intel GPU (QSV) configured at /dev/dri/card0 and /dev/dri/renderD128 for this application to work as expected.
-
-
-  Some of the most popular plugins include:
-  
-  - Ring
-  
-  - Nest & Nest Cameras
-  
-  - TP-Link Kasa Smart Home
-  
-  - Hue / deCONZ (Zigbee)
-  
-  - Belkin Wemo
-  
-  - myQ
-  
-  - UniFi Protect
 developer: Homebridge
 website: https://homebridge.io/
 dependencies: []
