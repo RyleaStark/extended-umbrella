@@ -4,6 +4,7 @@ category: automation
 name: Homebridge (Intel iGPU/QSV)
 version: "1.9.0-2025-05-16"
 tagline: "HomeKit support for the impatient"
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/7075c04c92c4c058bcd187f5dbfd721a67aca777/qsv-homebridge/gallery/icon.svg
 description: >-
   Bringing HomeKit support where there is none. Homebridge allows you to integrate with smart home devices that do not natively support HomeKit.
   There are over 2000 Homebridge plugins supporting thousands of different smart accessories.
@@ -35,9 +36,9 @@ repo: https://github.com/homebridge/homebridge
 support: https://github.com/homebridge/homebridge/issues
 port: 8581
 gallery:
-  - 1.jpg
-  - 2.jpg
-  - 3.jpg
+  - https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/1.jpg?raw=true
+  - https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/2.jpg?raw=true
+  - https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/3.jpg?raw=true
 path: ""
 defaultUsername: ""
 defaultPassword: ""
