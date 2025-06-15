@@ -30,7 +30,7 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 ## 🙌 Credits
 
-Maintained by [@RyleaStark](https://github.com/youruserRyleaStarkname).  
+Maintained by [@RyleaStark](https://github.com/RyleaStark).  
 
 ---
 
