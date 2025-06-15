@@ -1,10 +1,10 @@
 manifestVersion: 1
-id: qsv-homebridge
+id: extended-embrella-qsv-homebridge
 category: automation
 name: "Homebridge with Intel iGPU/QSV"
 version: "1.9.0-2025-05-16"
 tagline: "HomeKit support for the impatient"
-icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/7075c04c92c4c058bcd187f5dbfd721a67aca777/qsv-homebridge/gallery/icon.svg
+icon: https://github.com/getumbrel/umbrel-apps-gallery/blob/master/homebridge/icon.svg?raw=true
 description: >-
   Bringing HomeKit support where there is none. Homebridge allows you to integrate with smart home devices that do not natively support HomeKit.
   There are over 2000 Homebridge plugins supporting thousands of different smart accessories.
