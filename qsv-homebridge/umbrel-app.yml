@@ -1,7 +1,7 @@
 manifestVersion: 1
 id: qsv-homebridge
 category: automation
-name: Homebridge (Intel iGPU/QSV)
+name: "Homebridge (Intel iGPU/QSV)"
 version: "1.9.0-2025-05-16"
 tagline: "HomeKit support for the impatient"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/7075c04c92c4c058bcd187f5dbfd721a67aca777/qsv-homebridge/gallery/icon.svg
@@ -48,5 +48,5 @@ releaseNotes: >-
 
 
   Full release notes can be found at https://github.com/homebridge/homebridge/releases
-submitter: Rylea Stark
+submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella
