@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-qsv-homebridge
 category: automation
 name: "Homebridge (iGPU)"
-version: "2025-06-10"
+version: "2025-06-28"
 tagline: "HomeKit support for the impatient"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/icon.svg
 description: >-
@@ -27,7 +27,7 @@ defaultUsername: ""
 defaultPassword: ""
 torOnly: false
 releaseNotes: >-
-  Updates docker release tag to 2025-06-10
+  Updates docker release tag to 2025-06-28
 
 
   Full release notes can be found at https://github.com/homebridge/homebridge/releases
