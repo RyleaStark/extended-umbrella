@@ -22,9 +22,9 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 ## 🧩 Apps in This Store
 
-| App Name         | Description                         |
-|------------------|-------------------------------------|
-| `qsv-homebridge` | Homebridge with Intel QSV support   |
+| App Name         | Description                         | Version      |
+|------------------|-------------------------------------| ------------ |
+| `qsv-homebridge` | Homebridge with Intel QSV support   | `2025-06-28` |
 
 ---
 
