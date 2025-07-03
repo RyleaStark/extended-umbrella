@@ -24,7 +24,7 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 | App Name         | Description                         | Version      |
 |------------------|-------------------------------------| ------------ |
-| `qsv-homebridge` | Homebridge with Intel QSV support   | `2025-06-28` |
+| `qsv-homebridge` | Homebridge with Intel QSV support   | `2025-06-29` |
 
 ---
 
