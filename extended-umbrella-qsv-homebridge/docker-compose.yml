@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   server:
-    image: homebridge/homebridge:2025-06-29@sha256:fdfae0c9f86ae3340c6bcec0d1811f741eff1c070512204cfcc28e1f1e674002
+    image: homebridge/homebridge:2025-07-12@sha256:c92b37116f826586ead78a85b542bd978a8f6f289ab193d21c3fa73357dcb2c2
     # container runs as root
     network_mode: host
     # available at port 8581
