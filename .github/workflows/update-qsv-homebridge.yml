@@ -37,9 +37,16 @@ jobs:
         id: get_digest
         run: |
           LATEST="${{ steps.get_tag.outputs.latest }}"
-          DIGEST=$(curl -s -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
-            https://registry.hub.docker.com/v2/homebridge/homebridge/manifests/${LATEST} \
-            | sha256sum | cut -d' ' -f1)
+
+          # Get auth token
+          TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:homebridge/homebridge:pull" | jq -r .token)
+
+          # Get digest from Docker registry
+          DIGEST=$(curl -s -H "Authorization: Bearer $TOKEN" \
+                        -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+                        https://registry-1.docker.io/v2/homebridge/homebridge/manifests/${LATEST} \
+                  | jq -r '.config.digest')
+
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: Update files if new version found
