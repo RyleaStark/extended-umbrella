@@ -33,10 +33,20 @@ jobs:
           echo "Current version: $CUR"
           echo "current=$CUR" >> $GITHUB_OUTPUT
 
+      - name: Fetch new SHA256 digest for latest tag
+        id: get_digest
+        run: |
+          LATEST="${{ steps.get_tag.outputs.latest }}"
+          DIGEST=$(curl -s -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+            https://registry.hub.docker.com/v2/homebridge/homebridge/manifests/${LATEST} \
+            | sha256sum | cut -d' ' -f1)
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
       - name: Update files if new version found
         run: |
           LATEST="${{ steps.get_tag.outputs.latest }}"
           CUR="${{ steps.read_version.outputs.current }}"
+          DIGEST="${{ steps.get_digest.outputs.digest }}"
 
           if [ "$LATEST" = "" ] || [ "$LATEST" = "$CUR" ]; then
             echo "No new tag to update (latest=$LATEST, current=$CUR)."
@@ -44,7 +54,7 @@ jobs:
           fi
 
           echo "Updating from $CUR to $LATEST"
-          sed -i "s/homebridge:.*@sha256/homebridge:${LATEST}@sha256/g" extended-umbrella-qsv-homebridge/docker-compose.yml
+          sed -i "s|homebridge:.*@sha256.*|homebridge:${LATEST}@sha256:${DIGEST}|g" extended-umbrella-qsv-homebridge/docker-compose.yml
           sed -i "s/version: \".*\"/version: \"${LATEST}\"/" extended-umbrella-qsv-homebridge/umbrel-app.yml
           sed -i "s/Updates docker release tag to .*/Updates docker release tag to ${LATEST}/" extended-umbrella-qsv-homebridge/umbrel-app.yml
 
