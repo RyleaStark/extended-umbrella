@@ -1,0 +1,61 @@
+name: Update qsv-homebridge
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # daily at midnight
+
+jobs:
+  bump-homebridge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Determine latest calendar tag from Docker Hub
+        id: get_tag
+        run: |
+          # Fetch tag list (first 100 tags) from Docker Hub API
+          TAGS=$(curl -s "https://hub.docker.com/v2/repositories/homebridge/homebridge/tags?page_size=100" \
+                 | jq -r '.results[].name')
+          # Filter for tags matching YYYY-MM-DD (no 'dev', 'latest', 'beta', etc.)
+          LATEST=$(echo "$TAGS" \
+                   | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' \
+                   | sort \
+                   | tail -n1)
+          echo "Latest tag: $LATEST"
+          echo "::set-output name=latest::$LATEST"
+      
+      - name: Read current version
+        id: read_version
+        run: |
+          CUR=$(grep -E '^version:' extended-umbrella-qsv-homebridge/umbrel-app.yml \
+                | sed -E 's/version: *"([0-9-]+)"/\1/')
+          echo "Current version: $CUR"
+          echo "::set-output name=current::$CUR"
+
+      - name: Update files if new version found
+        run: |
+          LATEST=${{ steps.get_tag.outputs.latest }}
+          CUR=${{ steps.read_version.outputs.current }}
+          if [ "$LATEST" = "" ] || [ "$LATEST" = "$CUR" ]; then
+            echo "No new tag to update (latest=$LATEST, current=$CUR)."
+            exit 0
+          fi
+          echo "Updating from $CUR to $LATEST"
+          # Update docker-compose.yml image tag (and optionally the digest)
+          sed -i "s/homebridge:.*@sha256/homebridge:${LATEST}@sha256/g" extended-umbrella-qsv-homebridge/docker-compose.yml
+          # Update umbrel-app.yml version and releaseNotes
+          sed -i "s/version: \".*\"/version: \"${LATEST}\"/" extended-umbrella-qsv-homebridge/umbrel-app.yml
+          sed -i "s/Updates docker release tag to .*/Updates docker release tag to ${LATEST}/" extended-umbrella-qsv-homebridge/umbrel-app.yml
+          # Commit changes
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add extended-umbrella-qsv-homebridge/docker-compose.yml
+          git add extended-umbrella-qsv-homebridge/umbrel-app.yml
+          git commit -m "Bump qsv-homebridge to ${LATEST}" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
