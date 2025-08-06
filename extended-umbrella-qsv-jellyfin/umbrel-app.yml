@@ -1,0 +1,58 @@
+manifestVersion: 1
+id: extended-umbrella-qsv-jellyfin
+category: media
+name: Jellyfin (iGPU)
+version: "10.10.7"
+tagline: The Free Software Media System
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-jellyfin/gallery/icon.svg
+description: >-
+  Jellyfin is the volunteer-built media solution that puts you in control of your media. Stream to any device from your own server, with no strings attached. Your media, your server, your way.
+
+
+  Run the Jellyfin server on your system and gain access to the leading free-software entertainment system, bells and whistles included.
+
+
+  Watch your media from a web browser on your computer, apps on your Roku, Android, iOS (including AirPlay), Android TV, or Fire TV device, or via your Chromecast or existing Kodi installation.
+
+
+  Jellyfin has no tracking, phone-home, or central servers collecting your data. We believe in keeping our software open and transparent, and anything we might collect (crash logs, etc.) is opt-in only. We're also not in the media business, so the only media you see is your own.
+
+
+  The Jellyfin server and clients are free to download, now and always. There are no costs, hidden or otherwise, to use Jellyfin, either for yourself, for your friends, or for your company. All our incidental costs are paid through donations from users like you.
+
+  This version of Jellyfin for Umbrel adds Intel QuickSync Video to the container, allowing you to utilize hardware video encoding and decoding on compatible x86 Umbrel Devices.
+  Your server must have the Intel GPU (QSV) configured at /dev/dri/card0 and /dev/dri/renderD128 for this application to work as expected.
+developer: Jellyfin
+website: https://jellyfin.org/
+dependencies: []
+repo: https://github.com/jellyfin/jellyfin
+support: https://github.com/jellyfin/jellyfin/issues
+port: 8096
+gallery:
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-jellyfin/gallery/1.jpg
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-jellyfin/gallery/2.jpg
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-jellyfin/gallery/3.jpg
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: >-
+  This minor release brings several bugfixes and security fixes to improve your Jellyfin experience.
+
+
+  ⚠️ If you're using a reverse proxy, ensure you have explicitly configured trusted proxies before upgrading. See the Jellyfin documentation for more information.
+
+
+  Key improvements in this release:
+    - Fixed issues with metadata search and handling
+    - Improved support for various audio and video formats
+    - Enhanced security for API parameters and proxy configurations
+    - Better handling of ratings and premiere dates
+    - Improved system stability and performance
+
+
+  Full release notes can be found at https://github.com/jellyfin/jellyfin/releases
+torOnly: false
+permissions:
+  - STORAGE_DOWNLOADS
+submitter: "Rylea Stark"
+submission: https://github.com/RyleaStark/extended-umbrella
