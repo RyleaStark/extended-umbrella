@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-qsv-homebridge
 category: automation
 name: "Homebridge (iGPU)"
-version: "2025-09-28"
+version: "2025-11-08"
 tagline: "HomeKit support for the impatient"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/icon.svg
 description: >-
@@ -18,6 +18,8 @@ dependencies: []
 repo: https://github.com/homebridge/homebridge
 support: https://github.com/homebridge/homebridge/issues
 port: 8581
+permissions:
+  - GPU
 gallery:
   - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/1.jpg
   - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-qsv-homebridge/gallery/2.jpg
@@ -27,7 +29,7 @@ defaultUsername: ""
 defaultPassword: ""
 torOnly: false
 releaseNotes: >-
-  Updates docker release tag to 2025-09-28
+  Updates docker release tag to 2025-11-08
 
 
   Full release notes can be found at https://github.com/homebridge/homebridge/releases
