@@ -3,7 +3,7 @@ version: "3.9"
 services:
   lnswitchboard:
     build: .
-    image: ghcr.io/ryleastark/lnswitchboard:latest@sha256:d6870bde2391b6d8cc7d53650efb9ae9e56625543b02483c71c5c7b395101a2e
+    image: docker pull ghcr.io/ryleastark/lnswitchboard:latest@sha256:fb50a90ff536f9871ea789338bbf961968baf394463a58717628dc399134d0c8
     container_name: lnswitchboard
     restart: unless-stopped
     environment:
