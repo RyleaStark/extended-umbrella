@@ -1,0 +1,20 @@
+manifestVersion: 1
+id: extended-umbrella-lnswitchboard
+category: bitcoin
+name: "lnSwitchboard"
+version: "0.0.1"
+tagline: "LN Addresses for Every Domain"
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
+description: >-
+  Product In Development, Install At Own Risk (May Not Work)
+developer: RyleaStark
+website: https://github.com/RyleaStark/lnSwitchboard
+dependencies: 
+  - lightning
+repo: https://github.com/RyleaStark/lnSwitchboard
+support: https://github.com/RyleaStark/lnSwitchboard/issues
+port: 22121
+releaseNotes: >-
+  v0.0.1
+submitter: "Rylea Stark"
+submission: https://github.com/RyleaStark/extended-umbrella
