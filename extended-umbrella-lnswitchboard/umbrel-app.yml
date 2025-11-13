@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.0.91"
+version: "0.0.92"
 tagline: "LN Addresses for Every Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 description: >-
@@ -15,6 +15,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.0.91 - QoL Update, New UI
+  v0.0.92 - LUD-12, LUD-16, LUD-17, LUD-21
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella
