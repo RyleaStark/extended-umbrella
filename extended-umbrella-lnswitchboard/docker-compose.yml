@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:latest@sha256:3984710f6d16a54c62e475ca48ffecb611048f4dfceabd4836adfbd465a36f43
+    image: ghcr.io/ryleastark/lnswitchboard:latest@sha256:057196987c3ce2f66cf9483ca7d76b7609c2d50ee4144f64071bac6ceaed974b
     restart: unless-stopped
     environment:
       SERVICE_PORT: 22121
