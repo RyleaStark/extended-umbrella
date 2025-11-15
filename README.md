@@ -22,10 +22,10 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 ## 🧩 Apps in This Store
 
-| App Name         | Description                         | Version      |
-|------------------|-------------------------------------| ------------ |
-| `qsv-homebridge` | Homebridge with Intel QSV support   | `2025-11-08` |
-| `lnswitchboard`  | In Development                      | `n/a`        |
+| App Name         | Description                             | Version      |
+|------------------|-----------------------------------------| ------------ |
+| `qsv-homebridge` | Homebridge with Intel QSV support       | `2025-11-08` |
+| `lnswitchboard`  | Self Hosted LNURLp Lightning Addresses  | `0.0.95`     |
 
 ---
 
