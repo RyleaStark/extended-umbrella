@@ -2,11 +2,17 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.0.9491"
-tagline: "LN Addresses for Every Domain"
+version: "0.0.95"
+tagline: "Self-Hosted Lightning Addresses on Your Domains"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
+gallery:
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/1.jpg
 description: >-
-  Product In Development, Install At Own Risk (May Not Work)
+  Turn your node into a sovereign Lightning Address switchboard. Expose only
+  the public LNURL-pay endpoint while keeping admin access local on port 22121.
+  Map any username, tag, or vanity handle to the same backend, enjoy a simple
+  UI, sane rate limiting, and a clean activity log. Works with every LNURL-savvy
+  wallet and service provider.
 developer: RyleaStark
 website: https://github.com/RyleaStark/lnSwitchboard
 dependencies: 
@@ -15,6 +21,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.0.9491 - Refresh Invoice Statuses
+  v0.0.95 - Initial Public Release
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella
