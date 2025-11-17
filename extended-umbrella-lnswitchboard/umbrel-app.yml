@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.0.96"
+version: "0.0.96h"
 tagline: "Self-Hosted Lightning Addresses on Your Domains"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -21,6 +21,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.0.96 - Add NIP-05, New UI, Dynamic Liquidity Calculation, User Settings, Help Guide Links
+  v0.0.96h - Add NIP-05, New UI, Dynamic Liquidity Calculation, User Settings, Help Guide Links + HOTFIX
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella
