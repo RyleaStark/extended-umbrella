@@ -3,8 +3,9 @@ version: "3.9"
 services:
   app_proxy:
     environment:
-      APP_HOST: lnswitchboard_app_1
+      APP_HOST: extended-umbrella-lnswitchboard_app_1
       APP_PORT: 22121
+      PROXY_AUTH_WHITELIST: "/.well-known/*"
   app:
     image: ghcr.io/ryleastark/lnswitchboard:0.0.96@sha256:6e378fd4e2ca0fa59cb15997151d02fe8274316f6140f05b507d184a46f5655b
     restart: unless-stopped
