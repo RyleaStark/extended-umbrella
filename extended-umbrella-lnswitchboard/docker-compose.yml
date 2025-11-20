@@ -19,5 +19,3 @@ services:
       - ${APP_DATA_DIR}/data/secrets:/app/secrets:rw
       - ${APP_DATA_DIR}/data/logs:/app/logs:rw
       - ${UMBREL_ROOT}/app-data/lightning/data/lnd:/lnd:ro
-    ports:
-      - "22121:22121"
