@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.0.961a"
+version: "0.0.97"
 tagline: "Self-Hosted Lightning Addresses on Your Domains"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -21,6 +21,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.0.961a - Add App Proxy/Protection Infront of App
+  v0.0.97 - Updated Mobile UI, Improve Invoice Statuses
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

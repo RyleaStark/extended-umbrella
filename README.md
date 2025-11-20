@@ -24,7 +24,7 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 | App Name         | Description                             | Version      |
 |------------------|-----------------------------------------| ------------ |
-| `lnswitchboard`  | Self Hosted LNURLp Lightning Addresses  | `0.0.96`     |
+| `lnswitchboard`  | Self Hosted LNURLp Lightning Addresses  | `0.0.97`     |
 
 ---
 
