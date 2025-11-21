@@ -1,14 +1,12 @@
-# 🌂 Extended Umbrella – Optimized Umbrel Community Store
+# 🌂 Extended Umbrella – Dev App Store
 
-Welcome to **Extended Umbrella**, a community-powered app store designed to unlock the **full hardware potential** of your Umbrel server.
-
-Whether you're running an Intel NUC, a custom x86 build, or a powerhouse server, Extended Umbrella delivers apps tailored to make the most of your hardware.
+Welcome to **Extended Umbrella**, a community-powered app store for nightly builds from RyleaStark
 
 ---
 
 ## 🚀 Why Extended Umbrella?
 
-The official Umbrel App Store is great for general-purpose apps, but sometimes you want ⚡ **Hardware-optimized support**.
+The official Umbrel App Store is great for general-purpose apps, but it mostly maintains self-built apps by this developer.
 
 ## 🧱 How to Add Extended Umbrella to Umbrel
 
