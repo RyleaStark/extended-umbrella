@@ -18,5 +18,4 @@ services:
       DATA_STORE_PATH: "secrets/lnswitchboard.db"
     volumes:
       - ${APP_DATA_DIR}/data/secrets:/app/secrets:rw
-      - ${APP_DATA_DIR}/data/logs:/app/logs:rw
       - ${UMBREL_ROOT}/app-data/lightning/data/lnd:/lnd:ro
