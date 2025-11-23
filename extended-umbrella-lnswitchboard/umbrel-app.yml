@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.0.98"
+version: "0.0.99"
 tagline: "Self-Hosted Lightning Addresses on Your Domains"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -21,7 +21,7 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.0.98 - Cleans Up UI, SQLite, and Invoice Page
+  v0.0.99 - Cleans Up UI, SQLite, and Invoice Page
   
   This change introduces a migration script to remove dependency on static json and log files for data, introduces as sqlite database for managing data. Further UI Improvements added for mobile including decluttering the UI.
 submitter: "Rylea Stark"

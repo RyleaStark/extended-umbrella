@@ -8,7 +8,7 @@ services:
       PROXY_AUTH_WHITELIST: "/.well-known/*"
       PROXY_AUTH_ADD: "true"
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.0.98@sha256:825052c8df9faaef6166f9e7e1f1bc875cb31bd493788bc77d875946639d4b7d
+    image: ghcr.io/ryleastark/lnswitchboard:0.0.99@sha256:cf8e0be7823897cf6113c875e629edf3f9ee020e18a91165d7df0cdf6bb74d1a
     restart: unless-stopped
     environment:
       SERVICE_PORT: 22121
