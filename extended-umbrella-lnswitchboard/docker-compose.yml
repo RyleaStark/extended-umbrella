@@ -8,13 +8,14 @@ services:
       PROXY_AUTH_WHITELIST: "/.well-known/*"
       PROXY_AUTH_ADD: "true"
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.0.97@sha256:738a803be97e2e9f1a701f921ed1c4f293eb4c9458c69cb54efb85d9520d907a
+    image: ghcr.io/ryleastark/lnswitchboard:0.0.98@sha256:825052c8df9faaef6166f9e7e1f1bc875cb31bd493788bc77d875946639d4b7d
     restart: unless-stopped
     environment:
       SERVICE_PORT: 22121
       LND_HOST: "$APP_LIGHTNING_NODE_IP"
       LND_GRPC_PORT: "$APP_LIGHTNING_NODE_GRPC_PORT"
       LND_TLS_PATH: "/lnd/tls.cert"
+      DATA_STORE_PATH: "secrets/lnswitchboard.db"
     volumes:
       - ${APP_DATA_DIR}/data/secrets:/app/secrets:rw
       - ${APP_DATA_DIR}/data/logs:/app/logs:rw
