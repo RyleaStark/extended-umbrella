@@ -22,7 +22,7 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 | App Name         | Description                             | Version      | Umbrel Auth Proxy |
 |------------------|-----------------------------------------| ------------ | ----------------- |
-| `lnswitchboard`  | Self Hosted LNURLp Lightning Addresses  | `0.2.0`      | ✅                |
+| `lnswitchboard`  | Self Hosted LNURLp Lightning Addresses  | `0.2.1`      | ✅                |
 
 ---
 
