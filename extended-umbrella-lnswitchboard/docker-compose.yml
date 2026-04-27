@@ -7,7 +7,7 @@ services:
       APP_PORT: 22121
       PROXY_AUTH_WHITELIST: "/.well-known/*"
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.1.35@sha256:dc1d2159165e2f204996b2189803febdb63f30f6a9b4c214676ad5ad7a4b527f
+    image: ghcr.io/ryleastark/lnswitchboard:0.2.0@sha256:b13eb32717a2c426003a4e2db07700885a9e8c9cd9e44d801fa54e8d88e769ce
     user: "1000:1000"
     restart: on-failure
     environment:
