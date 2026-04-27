@@ -7,7 +7,7 @@ services:
       APP_PORT: 22121
       PROXY_AUTH_WHITELIST: "/.well-known/*"
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.1.32@sha256:5cf0100c904cf27ec8edcfa1eb3249fdfdc92c52fb1a739c35ee77f933908650
+    image: ghcr.io/ryleastark/lnswitchboard:0.1.33@sha256:e284a4e1c35796116cb4b357c969cfdc2b31293406705cebde9eae560697783c
     user: "1000:1000"
     restart: on-failure
     environment:
@@ -15,7 +15,7 @@ services:
       LND_HOST: "$APP_LIGHTNING_NODE_IP"
       LND_GRPC_PORT: "$APP_LIGHTNING_NODE_GRPC_PORT"
       LND_TLS_PATH: "/lnd/tls.cert"
-      DATA_STORE_PATH: "secrets/lnswitchboard.db"
+      DATA_STORE_PATH: "/app/secrets/lnswitchboard.db"
       LND_MACAROON_PATH: "/lnd/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/invoice.macaroon"
     volumes:
       - ${APP_LIGHTNING_NODE_DATA_DIR}:/lnd:ro
