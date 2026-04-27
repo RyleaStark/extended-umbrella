@@ -7,7 +7,7 @@ services:
       APP_PORT: 22121
       PROXY_AUTH_WHITELIST: "/.well-known/*"
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.1.34@sha256:d811a9be355e9d9293a9af4a95b15369c56752f815396e94c01e1a0eb1810c36
+    image: ghcr.io/ryleastark/lnswitchboard:0.1.35@sha256:dc1d2159165e2f204996b2189803febdb63f30f6a9b4c214676ad5ad7a4b527f
     user: "1000:1000"
     restart: on-failure
     environment:
@@ -18,6 +18,7 @@ services:
       LND_TLS_PATH: "/lnd/tls.cert"
       LND_MACAROON_PATH: "/lnd/invoice.macaroon"
       LND_READONLY_MACAROON_PATH: "/lnd/readonly.macaroon"
+      DEP_ENV: "UMBREL-DEV"
     volumes:
       - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/invoice.macaroon:/lnd/invoice.macaroon:ro
       - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/readonly.macaroon:/lnd/readonly.macaroon:ro
