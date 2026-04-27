@@ -7,7 +7,7 @@ services:
       APP_PORT: 22121
       PROXY_AUTH_WHITELIST: "/.well-known/*"
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.1.31@sha256:d02b7b7e9a54503a9cc842f4a79e9537dc7a0eb43677fe628ade6932e23e09dd
+    image: ghcr.io/ryleastark/lnswitchboard:0.1.32@sha256:5cf0100c904cf27ec8edcfa1eb3249fdfdc92c52fb1a739c35ee77f933908650
     user: "1000:1000"
     restart: on-failure
     environment:
@@ -20,4 +20,3 @@ services:
     volumes:
       - ${APP_LIGHTNING_NODE_DATA_DIR}:/lnd:ro
       - ${APP_DATA_DIR}/data/secrets:/app/secrets:rw
-      - ${UMBREL_ROOT}/app-data/lightning/data/lnd:/lnd:ro
