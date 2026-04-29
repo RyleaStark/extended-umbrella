@@ -20,9 +20,9 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 ## 🧩 Apps in This Store
 
-| App Name         | Description                             | Version      | Umbrel Auth Proxy |
-|------------------|-----------------------------------------| ------------ | ----------------- |
-| `lnswitchboard`  | Self Hosted LNURLp Lightning Addresses  | `0.2.3`      | ✅                |
+| App Name                                                      | Description                             | Version      | Umbrel Auth Proxy |
+|---------------------------------------------------------------|-----------------------------------------| ------------ | ----------------- |
+| [lnSwitchboard](https://github.com/RyleaStark/lnSwitchboard)  | Self Hosted LNURLp Lightning Addresses  | `0.2.3`      | ✅                |
 
 ---
 
