@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.3.1"
+version: "0.3.2"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.3.1 - Refreshes the Python, Node.js, TypeScript, and application dependencies; hardens trusted-proxy, Host, CORS, outbound webhook, Nostr relay, and container security; improves LND, Nostr acknowledgement, SQLite, and release reliability; and preserves verified multi-architecture image publication.
+  v0.3.2 - Replaces the dashboard invoice activity visualization with Dither Kit and adds selectable 14-day Sats routed, Invoices paid, and Invoices created metrics. The chart supports keyboard and screen-reader access while preserving timezone-aware daily buckets. No manual migration is required.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

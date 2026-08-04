@@ -2,6 +2,22 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.3.2 — 2026-08-03
+
+### Changed
+
+- Updated lnSwitchboard from 0.3.1 to 0.3.2.
+- Pinned the verified GHCR multi-architecture image index at `sha256:7a91c256a69b218adcaa30b4f52315577e6966cde7ffe702bb95c4e26a07fc83`.
+- Replaced the dashboard invoice activity visualization with Dither Kit.
+- Added selectable 14-day Sats routed, Invoices paid, and Invoices created metrics.
+- Added keyboard-accessible metric tabs and a screen-reader-readable date/value table.
+
+### Upgrade notes
+
+- Existing lnSwitchboard data remains in `${APP_DATA_DIR}/data/secrets` and is reused automatically.
+- The existing database is indexed automatically for created-invoice activity queries.
+- No manual migration is required.
+
 ## 0.3.1 — 2026-08-03
 
 ### Changed
