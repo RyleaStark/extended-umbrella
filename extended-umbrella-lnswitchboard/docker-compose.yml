@@ -16,7 +16,7 @@ services:
       - |
         install -d -m 0770 -o 1000 -g 65532 /cloudflared
         install -d -m 0700 -o 1000 -g 1000 /tailscale/control /tailscale/status
-        install -d -m 0700 -o 0 -g 0 /tailscale-state
+        install -d -m 0700 -o 1000 -g 1000 /tailscale-state
     volumes:
       - ${APP_DATA_DIR}/data/connectors/cloudflared:/cloudflared
       - ${APP_DATA_DIR}/data/connectors/tailscale:/tailscale
@@ -93,6 +93,7 @@ services:
 
   tailscale:
     image: tailscale/tailscale:v1.98.10@sha256:cdf5612ded5be1344f1a704b8c5e53496db97376bb533e5e15f141e48bf60cc0
+    user: "1000:1000"
     entrypoint: ["/usr/local/bin/lnswitchboard-tailscale-supervisor"]
     restart: unless-stopped
     stop_grace_period: 30s
@@ -123,7 +124,7 @@ services:
       # arbitrary package-root files (which are omitted on install/update).
       - ${APP_DATA_DIR}/hooks/tailscale-supervisor.sh:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
     tmpfs:
-      - /var/run/tailscale:mode=0750
+      - /var/run/tailscale:mode=0750,uid=1000,gid=1000
     healthcheck:
       test: ["CMD-SHELL", "test -S /var/run/tailscale/tailscaled.sock"]
       interval: 30s

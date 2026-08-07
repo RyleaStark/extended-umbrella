@@ -8,6 +8,7 @@ All notable changes to the Extended Umbrella package for lnSwitchboard are docum
 
 - Updates the existing `extended-umbrella-lnswitchboard` app in place to the verified multi-architecture RC index `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc3@sha256:2f40586aa9ce583a48177d0d53d85010e0ef4361274d471a52386f3e5b9f3351`.
 - Packages the Tailscale supervisor in Umbrel's whitelisted `hooks/` directory and mounts that copied executable, fixing the missing sidecar caused by an omitted root-level helper file.
+- Runs the userspace-only Tailscale sidecar and its state/socket/control artifacts as UID/GID `1000:1000`; this avoids forbidden runtime ownership changes under the intentionally capability-free container.
 - Configures an existing Cloudflare account/tunnel ID with current Cloudflare One connector API-token guidance; the existing tunnel is never created or deleted.
 
 ### Upgrade notes
