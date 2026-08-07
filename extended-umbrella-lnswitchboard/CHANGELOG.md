@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc8 — 2026-08-07
+
+### Changed
+
+- Updates the existing package to verified multi-architecture RC8: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc8@sha256:2970e4a88a5521577b1a2f39256bb592db533f518512a1f4621da0eed8a4c21d`.
+- Adds staged Cloudflare Tunnel setup with explicit user API-token guidance and token-derived zone selection, alongside improved mobile viewport sizing, compact dashboard metrics, and a centered footer.
+
+### Upgrade notes
+
+- Funnel continues to expose only `:443 → 127.0.0.1:21212`; administration on port `22121` remains unavailable through Funnel.
+
 ## 0.4.0.rc7 — 2026-08-07
 
 ### Changed
