@@ -23,7 +23,7 @@ services:
       - ${APP_DATA_DIR}/data/connectors/tailscale/state:/tailscale-state
 
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc3@sha256:2f40586aa9ce583a48177d0d53d85010e0ef4361274d471a52386f3e5b9f3351
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc5@sha256:0adb31170ba1645f5746114793c26a7a9be9a7b7d9479ddf31b522e716ee4f6b
     user: "1000:1000"
     group_add:
       - "65532"
