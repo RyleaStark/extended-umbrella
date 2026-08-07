@@ -2,6 +2,21 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc1 — 2026-08-07
+
+### Changed
+
+- Updates the existing `extended-umbrella-lnswitchboard` app in place to the verified multi-architecture RC index `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc1@sha256:96acfba538a3ed2dc8f342f4b6a98a31902f4582f86e9f63947134f162d0245d`.
+- Adds split listeners: authenticated Umbrel administration remains internal on `22121`; the route-restricted public listener is host-published on `21212` for self-hosted reverse-proxy/direct publication.
+- Adds Cloudflared and userspace-only Tailscale Funnel sidecars, both restricted to the public listener.
+- Persists Cloudflare token, Tailscale state, and private supervisor control/status artifacts under `${APP_DATA_DIR}/data/connectors` rather than Docker named volumes.
+
+### Upgrade notes
+
+- The existing database and secrets at `${APP_DATA_DIR}/data/secrets` remain in place; provider tables are initialized additively.
+- Existing reverse proxies should target `:21212` for public LNURL/NIP-05 endpoints, never the Umbrel administration port `:22121`.
+- Installation and upgrade do not initiate Cloudflare or Tailscale authorization.
+
 ## 0.3.2 — 2026-08-03
 
 ### Changed
