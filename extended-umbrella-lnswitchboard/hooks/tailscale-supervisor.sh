@@ -11,20 +11,11 @@ CONTROL_DIR="${TS_CONTROL_DIR:-/run/lnswitchboard/control}"
 STATUS_DIR="${TS_STATUS_DIR:-/run/lnswitchboard/status}"
 POLL_INTERVAL="${TS_POLL_INTERVAL:-2}"
 LOGIN_RETENTION_SECONDS="${TS_LOGIN_RETENTION_SECONDS:-300}"
-SHARED_UID="${TS_SHARED_UID:-1000}"
-SHARED_GID="${TS_SHARED_GID:-1000}"
 FUNNEL_TARGET="http://127.0.0.1:21212"
 
 case "$LOGIN_RETENTION_SECONDS" in
     "" | *[!0-9]*)
         printf '%s\n' "TS_LOGIN_RETENTION_SECONDS must be a non-negative integer" >&2
-        exit 1
-        ;;
-esac
-
-case "$SHARED_UID:$SHARED_GID" in
-    *[!0-9:]* | :* | *:)
-        printf '%s\n' "TS_SHARED_UID and TS_SHARED_GID must be non-negative integers" >&2
         exit 1
         ;;
 esac
@@ -146,7 +137,6 @@ begin_login() {
     rm -f "$STATUS_DIR/login.json"
     "$TAILSCALE_BIN" --socket="$SOCKET" up --json --reset \
         --hostname="$device_name" \
-        --advertise-tags=tag:lnswitchboard \
         --accept-dns=false \
         >"$STATUS_DIR/login.json" 2>/dev/null &
     LOGIN_PID=$!

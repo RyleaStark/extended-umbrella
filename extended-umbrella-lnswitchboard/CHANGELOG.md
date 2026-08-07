@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc5 — 2026-08-07
+
+### Changed
+
+- Updates the existing package to the verified multi-architecture RC5 index `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc5@sha256:0adb31170ba1645f5746114793c26a7a9be9a7b7d9479ddf31b522e716ee4f6b`.
+- Does not advertise or require `tag:lnswitchboard`; the tailnet operator decides whether and how to tag the node and grant Funnel policy.
+
+### Upgrade notes
+
+- The existing userspace-only, UID/GID `1000:1000` Tailscale runtime and persisted application data remain unchanged.
+
 ## 0.4.0.rc4 — 2026-08-07
 
 ### Fixed
