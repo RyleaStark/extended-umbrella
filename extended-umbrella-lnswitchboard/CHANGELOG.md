@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc4 — 2026-08-07
+
+### Fixed
+
+- Bumps the existing package manifest version so Umbrel's web manager detects this connector-runtime update over RC3.
+- Runs the capability-free userspace Tailscale sidecar, its state/control/status directories, and socket tmpfs as UID/GID `1000:1000`; removes the failing runtime `chown`.
+
+### Upgrade notes
+
+- The pinned lnSwitchboard `0.4.0.rc3` image and existing app data are unchanged; this is a package/runtime-only update.
+
 ## 0.4.0.rc3 — 2026-08-07
 
 ### Fixed
