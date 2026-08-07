@@ -23,7 +23,7 @@ services:
       - ${APP_DATA_DIR}/data/connectors/tailscale/state:/tailscale-state
 
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc2@sha256:6cea4bb09fafc4b41eb5975edeb2c20ee73e240501962b9bc367baa9172c2a28
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc3@sha256:2f40586aa9ce583a48177d0d53d85010e0ef4361274d471a52386f3e5b9f3351
     user: "1000:1000"
     group_add:
       - "65532"
@@ -119,7 +119,9 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/connectors/tailscale/state:/var/lib/tailscale
       - ${APP_DATA_DIR}/data/connectors/tailscale:/run/lnswitchboard
-      - ${APP_DATA_DIR}/tailscale-supervisor.sh:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
+      # Umbrel legacy compatibility copies hooks/ byte-for-byte, unlike
+      # arbitrary package-root files (which are omitted on install/update).
+      - ${APP_DATA_DIR}/hooks/tailscale-supervisor.sh:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
     tmpfs:
       - /var/run/tailscale:mode=0750
     healthcheck:

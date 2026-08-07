@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc2"
+version: "0.4.0.rc3"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.4.0.rc2 development candidate. Adds HTTP-compatible Cloudflare API-token and Tailscale CLI onboarding from the administration panel; deployment security remains the operator’s responsibility. The split public listener on port 21212 is host-published for self-hosted reverse-proxy or direct-publication use, while Umbrel’s authenticated app proxy continues to serve administration on port 22121 only. Cloudflare Tunnel and userspace-only Tailscale Funnel connectors target only the public listener. Connector state is persisted beneath APP_DATA_DIR, and existing lnSwitchboard database/secrets remain in place. No live Cloudflare or Tailscale authorization is initiated by installation.
+  v0.4.0.rc3 development candidate. Cloudflare onboarding now configures an existing operator-supplied account and tunnel ID with a write-only API token; it uses current Cloudflare One connector permission guidance and never creates or deletes the tunnel. The userspace-only Tailscale Funnel helper is packaged through Umbrel's installer-supported hooks directory so its sidecar starts and consumes private connector commands. Administration remains on Umbrel's authenticated app proxy at port 22121 while the route-restricted public listener is host-published on port 21212. No live Cloudflare or Tailscale authorization is initiated by installation.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

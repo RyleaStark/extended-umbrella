@@ -2,6 +2,19 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc3 — 2026-08-07
+
+### Fixed
+
+- Updates the existing `extended-umbrella-lnswitchboard` app in place to the verified multi-architecture RC index `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc3@sha256:2f40586aa9ce583a48177d0d53d85010e0ef4361274d471a52386f3e5b9f3351`.
+- Packages the Tailscale supervisor in Umbrel's whitelisted `hooks/` directory and mounts that copied executable, fixing the missing sidecar caused by an omitted root-level helper file.
+- Configures an existing Cloudflare account/tunnel ID with current Cloudflare One connector API-token guidance; the existing tunnel is never created or deleted.
+
+### Upgrade notes
+
+- Updating recreates the previously `Created` Tailscale service with the packaged supervisor; no provider login is initiated.
+- Existing database, secrets, connector state, and listener routing remain unchanged.
+
 ## 0.4.0.rc2 — 2026-08-07
 
 ### Changed
