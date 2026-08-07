@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc6"
+version: "0.4.0.rc7"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.4.0.rc6 development candidate. Emits HTTPS LNURL callbacks for registered public provider domains behind Tailscale Funnel. The public Funnel listener remains 21212; administration remains isolated on 22121.
+  v0.4.0.rc7 development candidate. Refines the administration UI across desktop and mobile, including flatter connectors, safer secret inputs, resilient data states, and a compact footer. The public Funnel listener remains 21212; administration remains isolated on 22121.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

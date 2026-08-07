@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc7 — 2026-08-07
+
+### Changed
+
+- Updates the existing package to verified multi-architecture RC7: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc7@sha256:7bdbe8e77c2d56bf473c20c92be78bfaf792a09d1976db2e909071e63c3e650d`.
+- Refines the administration experience on desktop and mobile: flatter connector setup, a compact footer, solid app background, visible mobile navigation dismissal, responsive dialogs/tabs, clearer retry states, and safer masked secret inputs.
+
+### Upgrade notes
+
+- Funnel continues to expose only `:443 → 127.0.0.1:21212`; administration on port `22121` remains unavailable through Funnel.
+
 ## 0.4.0.rc6 — 2026-08-07
 
 ### Fixed
