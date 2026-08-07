@@ -2,6 +2,18 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc2 — 2026-08-07
+
+### Changed
+
+- Updates the existing `extended-umbrella-lnswitchboard` app in place to the verified multi-architecture RC index `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc2@sha256:6cea4bb09fafc4b41eb5975edeb2c20ee73e240501962b9bc367baa9172c2a28`.
+- Enables Cloudflare API-token and Tailscale CLI onboarding from HTTP or HTTPS administration; deployment security is operator-managed rather than enforced as an Umbrel-specific prerequisite.
+
+### Upgrade notes
+
+- Existing database, secrets, connector state, and public-listener routing remain unchanged.
+- Installation and upgrade do not initiate Cloudflare or Tailscale authorization.
+
 ## 0.4.0.rc1 — 2026-08-07
 
 ### Changed
