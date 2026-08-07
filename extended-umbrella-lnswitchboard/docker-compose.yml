@@ -4,12 +4,36 @@ services:
       APP_HOST: extended-umbrella-lnswitchboard_app_1
       APP_PORT: 22121
       PROXY_AUTH_WHITELIST: "/.well-known/*"
+
+  # Umbrel creates APP_DATA_DIR paths as root. This one-shot, unprivileged-from-
+  # the-host init service makes only the shared connector paths writable by the
+  # application and readable by the Cloudflared sidecar.
+  connector_init:
+    image: tailscale/tailscale:v1.98.10@sha256:cdf5612ded5be1344f1a704b8c5e53496db97376bb533e5e15f141e48bf60cc0
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        install -d -m 0770 -o 1000 -g 65532 /cloudflared
+        install -d -m 0700 -o 1000 -g 1000 /tailscale/control /tailscale/status
+        install -d -m 0700 -o 0 -g 0 /tailscale-state
+    volumes:
+      - ${APP_DATA_DIR}/data/connectors/cloudflared:/cloudflared
+      - ${APP_DATA_DIR}/data/connectors/tailscale:/tailscale
+      - ${APP_DATA_DIR}/data/connectors/tailscale/state:/tailscale-state
+
   app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.3.2@sha256:7a91c256a69b218adcaa30b4f52315577e6966cde7ffe702bb95c4e26a07fc83
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc1@sha256:96acfba538a3ed2dc8f342f4b6a98a31902f4582f86e9f63947134f162d0245d
     user: "1000:1000"
+    group_add:
+      - "65532"
     restart: on-failure
+    depends_on:
+      connector_init:
+        condition: service_completed_successfully
     environment:
       SERVICE_PORT: 22121
+      PUBLIC_SERVICE_PORT: 21212
       LND_HOST: "$APP_LIGHTNING_NODE_IP"
       LND_GRPC_PORT: "$APP_LIGHTNING_NODE_GRPC_PORT"
       DATA_STORE_PATH: "/app/secrets/lnswitchboard.db"
@@ -20,8 +44,87 @@ services:
       TRUSTED_PROXY_CIDRS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"
       TRUSTED_HOSTS: "*"
       DEP_ENV: "UMBREL-DEV"
+      CLOUDFLARED_CONNECTOR_ENABLED: "true"
+      CLOUDFLARED_TOKEN_PATH: "/app/cloudflared/tunnel.token"
+      CLOUDFLARED_TOKEN_GID: "65532"
+      CLOUDFLARED_METRICS_URL: "http://cloudflared:2000"
+      CLOUDFLARED_ORIGIN_URL: "http://app:21212"
+      TAILSCALE_CONNECTOR_ENABLED: "true"
+      TAILSCALE_CONTROL_DIR: "/app/tailscale/control"
+      TAILSCALE_STATUS_DIR: "/app/tailscale/status"
     volumes:
       - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/invoice.macaroon:/lnd/invoice.macaroon:ro
       - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/readonly.macaroon:/lnd/readonly.macaroon:ro
       - ${APP_LIGHTNING_NODE_DATA_DIR}/tls.cert:/lnd/tls.cert:ro
       - ${APP_DATA_DIR}/data/secrets:/app/secrets:rw
+      - ${APP_DATA_DIR}/data/connectors/cloudflared:/app/cloudflared
+      - ${APP_DATA_DIR}/data/connectors/tailscale:/app/tailscale
+    # Self-hosted publication path. This is only the route-restricted public
+    # listener; the administrative listener on 22121 remains proxy-only.
+    ports:
+      - "21212:21212"
+    expose:
+      - "21212"
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:22121/api/health', timeout=3).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.7.3@sha256:e39ee8da81ad5e05d77f38d2f51c60ca51bf2a8450ac3abab50c17fdb91d91bf
+    user: "65532:65532"
+    entrypoint: ["cloudflared"]
+    command: ["tunnel", "--autoupdate-freq", "24h", "--metrics", "0.0.0.0:2000", "run", "--token-file", "/run/lnswitchboard/tunnel.token"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ${APP_DATA_DIR}/data/connectors/cloudflared:/run/lnswitchboard:ro
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:2000", "ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  tailscale:
+    image: tailscale/tailscale:v1.98.10@sha256:cdf5612ded5be1344f1a704b8c5e53496db97376bb533e5e15f141e48bf60cc0
+    entrypoint: ["/usr/local/bin/lnswitchboard-tailscale-supervisor"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on:
+      app:
+        condition: service_healthy
+      connector_init:
+        condition: service_completed_successfully
+    network_mode: service:app
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      TS_STATE_DIR: "/var/lib/tailscale"
+      TS_SOCKET: "/var/run/tailscale/tailscaled.sock"
+      TS_USERSPACE: "true"
+      TS_CONTROL_DIR: "/run/lnswitchboard/control"
+      TS_STATUS_DIR: "/run/lnswitchboard/status"
+      TS_LOGIN_RETENTION_SECONDS: "300"
+      TS_SHARED_UID: "1000"
+      TS_SHARED_GID: "1000"
+    volumes:
+      - ${APP_DATA_DIR}/data/connectors/tailscale/state:/var/lib/tailscale
+      - ${APP_DATA_DIR}/data/connectors/tailscale:/run/lnswitchboard
+      - ${APP_DATA_DIR}/tailscale-supervisor.sh:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
+    tmpfs:
+      - /var/run/tailscale:mode=0750
+    healthcheck:
+      test: ["CMD-SHELL", "test -S /var/run/tailscale/tailscaled.sock"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
