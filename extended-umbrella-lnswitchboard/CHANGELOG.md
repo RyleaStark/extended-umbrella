@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc6 — 2026-08-07
+
+### Fixed
+
+- Updates the existing package to verified multi-architecture RC6: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc6@sha256:cf13af45d8d0375651e7a4388af4f1424c70384ccad2996a01f3d2a3e19a2448`.
+- Makes LNURL callbacks HTTPS for active public provider domains such as Tailscale Funnel hostnames, even though Funnel proxies to the local public listener over HTTP.
+
+### Upgrade notes
+
+- Funnel continues to expose only `:443 → 127.0.0.1:21212`; administration on port `22121` remains unavailable through Funnel.
+
 ## 0.4.0.rc5 — 2026-08-07
 
 ### Changed
