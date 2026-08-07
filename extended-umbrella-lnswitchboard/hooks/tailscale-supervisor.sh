@@ -34,7 +34,6 @@ LOGIN_PID=""
 LOGIN_COMPLETED_AT=""
 
 mkdir -p "$STATE_DIR" "$CONTROL_DIR" "$STATUS_DIR" "$(dirname "$SOCKET")"
-chown "$SHARED_UID:$SHARED_GID" "$CONTROL_DIR" "$STATUS_DIR"
 chmod 0700 "$CONTROL_DIR" "$STATUS_DIR"
 
 if [ -f "$STATUS_DIR/login.json" ]; then
