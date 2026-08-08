@@ -2,6 +2,19 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc14 — 2026-08-08
+
+### Changed
+
+- Updates lnSwitchboard to verified multi-architecture RC14: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc14@sha256:80659be0e48830e008524e75785b1c9b688c7ad45acb1b1dbbaf60c1f9912d4b`.
+- Replaces the Cloudflare Tunnel connector with a digest-pinned Cloudflare Mesh sidecar and customer-owned Worker data path.
+- Adds OAuth-only Cloudflare onboarding with public-client PKCE, explicit account and zone authorization, reconnect, and local encrypted grants.
+- Splits public LNURL/Nostr traffic onto the dedicated `:21212` listener while keeping administration on `:22121`.
+- Adds a supervised, identity-aware Mesh token handoff that clears stale persisted registration state before enrolling a replacement node.
+- Restricts the Mesh container to `/dev/net/tun`, `cap_drop: ALL`, and only `NET_ADMIN`/`NET_RAW`; no host networking, privileged mode, Docker socket, or published Mesh ports.
+- Disables Worker `workers.dev` and Preview URLs and restricts Worker forwarding to LNURL-pay and Nostr discovery paths.
+- Cloudflare onboarding remains disabled until the deployment supplies a registered public OAuth client ID and callback URLs.
+
 ## 0.4.0.rc12 — 2026-08-08
 
 ### Fixed
