@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc12 — 2026-08-08
+
+### Fixed
+
+- Cloudflare domain onboarding now initializes a newly selected remotely managed tunnel whose API configuration is validly returned as `null` before its first configuration write. Previously lnSwitchboard converted this state to HTTP 502 before writing ingress, DNS, or the connector token.
+- Pins the verified multi-architecture RC12 image index: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc12@sha256:7b6bc8e30e5b1ccf5cc11ee764d0503ada7717945f2f02913b2b3404dabb8561`.
+
 ## 0.4.0.rc11 — 2026-08-08
 
 ### Fixed
