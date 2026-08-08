@@ -1,0 +1,33 @@
+manifestVersion: 1.1
+id: litecoin-core
+category: bitcoin
+name: Litecoin Core
+version: "0.21.5.5-umbrel.1"
+tagline: Run your personal Litecoin node
+
+description: >-
+  Run a fully validating Litecoin node, powered by Litecoin Core.
+
+
+  The node uses the official Litecoin Core v0.21.5.5 image, pinned by immutable digest. Its Umbrel UI is a Litecoin-specific adaptation of Umbrel's Bitcoin Node interface with silver Litecoin branding.
+releaseNotes: ""
+
+developer: Litecoin Project and RyleaStark
+website: https://litecoin.org
+dependencies: []
+repo: https://github.com/RyleaStark/umbrel-litecoin-core-gui
+support: https://github.com/RyleaStark/umbrel-litecoin-core-gui/issues
+
+port: 2110
+gallery: []
+path: ""
+
+defaultUsername: ""
+defaultPassword: ""
+backupIgnore:
+  - data/litecoin/blocks
+  - data/litecoin/chainstate
+  - data/litecoin/indexes
+
+submitter: RyleaStark
+submission: https://github.com/RyleaStark/extended-umbrella
