@@ -1,0 +1,41 @@
+version: "3.7"
+services:
+  app_proxy:
+    environment:
+      APP_HOST: $APP_LITECOIN_FULCRUM_IP
+      APP_PORT: 3006
+  app:
+    image: ghcr.io/ryleastark/umbrel-litecoin-fulcrum-gui:v0.1.1@sha256:4019742280b3e2b941735830236af9492c14a6136bf9ce029b4f7f0b30b719d7
+    depends_on: [fulcrum]
+    restart: on-failure
+    environment:
+      ELECTRUM_LOCAL_SERVICE: "${DEVICE_DOMAIN_NAME}"
+      ELECTRUM_HOST: "${APP_LITECOIN_FULCRUM_NODE_IP}"
+      ELECTRUM_PUBLIC_CONNECTION_PORT: "${APP_LITECOIN_FULCRUM_NODE_PORT}"
+      LITECOIN_HOST: "${APP_LITECOIN_NODE_IP}"
+      RPC_USER: "${APP_LITECOIN_RPC_USER}"
+      RPC_PASSWORD: "${APP_LITECOIN_RPC_PASS}"
+      RPC_PORT: "${APP_LITECOIN_RPC_PORT}"
+    volumes: ["${APP_DATA_DIR}/data/fulcrum-logs:/fulcrum-logs"]
+    networks:
+      default: {ipv4_address: $APP_LITECOIN_FULCRUM_IP}
+  fulcrum:
+    image: cculianu/fulcrum:v2.1.1@sha256:72d8b2f9142f83a51c6c3ba2f6931b496a08bede610b28ef2315b87aa1e3bb64
+    init: true
+    stop_grace_period: 5m
+    restart: on-failure
+    user: "1000:1000"
+    environment:
+      TCP: 0.0.0.0:${APP_LITECOIN_FULCRUM_NODE_PORT}
+      ADMIN: 0.0.0.0:${APP_LITECOIN_FULCRUM_ADMIN_PORT}
+      BITCOIND: ${APP_LITECOIN_NODE_IP}:${APP_LITECOIN_RPC_PORT}
+      RPCUSER: ${APP_LITECOIN_RPC_USER}
+      RPCPASSWORD: ${APP_LITECOIN_RPC_PASS}
+      PEERING: "false"
+      ANNOUNCE: "false"
+      DATA_DIR: /data
+    command: 'Fulcrum -D /data _ENV_'
+    volumes: ["${APP_DATA_DIR}/data/fulcrum:/data"]
+    ports: ["${APP_LITECOIN_FULCRUM_NODE_PORT}:${APP_LITECOIN_FULCRUM_NODE_PORT}"]
+    networks:
+      default: {ipv4_address: $APP_LITECOIN_FULCRUM_NODE_IP}
