@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-core
 category: bitcoin
 name: "Litecoin Core"
-version: "0.21.5.5-umbrel.1"
+version: "0.21.5.5-umbrel.2"
 tagline: "Run your personal Litecoin node"
 
 description: >-
@@ -20,6 +20,7 @@ repo: https://github.com/RyleaStark/umbrel-litecoin-core-gui
 support: https://github.com/RyleaStark/umbrel-litecoin-core-gui/issues
 
 port: 2110
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-core/gallery/icon.svg
 gallery: []
 path: ""
 

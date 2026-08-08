@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-fulcrum
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.1"
+version: "2.1.1-umbrel.2"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -13,6 +13,7 @@ dependencies:
 repo: https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui
 support: https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui/issues
 port: 2109
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/icon.svg
 gallery: []
 path: ""
 defaultPassword: ""
