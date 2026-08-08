@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.6 — 2026-08-08
+
+### Security
+
+- Replaces the broad read-only LND data-directory mount with three exact file mounts: the TLS certificate, invoice macaroon, and readonly macaroon. The admin macaroon and all unrelated Lightning node data are no longer visible inside lnSwitchboard.
+
 ## 0.4.0.rc15-umbrel.5 — 2026-08-08
 
 ### Fixed
