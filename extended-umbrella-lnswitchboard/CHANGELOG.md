@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.2 — 2026-08-08
+
+### Fixed
+
+- Mounts the persistent Umbrel application data directory at lnSwitchboard's current writable `/app/secrets` state path. RC15 previously mounted it only at the obsolete `/app/data` path, so startup failed while creating the database log directory.
+- Removes the obsolete `LNS_DATA_DIR` compatibility variable now that the package follows RC15's explicit state-path contract.
+
 ## 0.4.0.rc15-umbrel.1 — 2026-08-08
 
 ### Fixed
