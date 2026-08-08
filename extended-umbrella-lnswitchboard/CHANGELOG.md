@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.3 — 2026-08-08
+
+### Fixed
+
+- Updates the container health check from the removed `/health` route to RC15's admin-only `/api/health` endpoint. The application was running and connected to LND, but the stale route returned 404 and kept App Proxy and Mesh blocked behind an unhealthy dependency.
+
 ## 0.4.0.rc15-umbrel.2 — 2026-08-08
 
 ### Fixed
