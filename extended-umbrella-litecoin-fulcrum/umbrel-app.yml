@@ -1,23 +1,24 @@
-manifestVersion: 1.1
-id: litecoin-fulcrum
+manifestVersion: 1
+id: extended-umbrella-litecoin-fulcrum
 category: bitcoin
-name: Fulcrum (LTC)
+name: "Fulcrum (LTC)"
 version: "2.1.1-umbrel.1"
-tagline: A fast Litecoin Electrum server
+tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
 developer: Calin Culianu and RyleaStark
 website: https://fulcrumserver.org/
 dependencies:
-  - litecoin-core
+  - extended-umbrella-litecoin-core
 repo: https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui
 support: https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui/issues
 port: 2109
 gallery: []
 path: ""
 defaultPassword: ""
-releaseNotes: "Initial Litecoin staging release."
+releaseNotes: >-
+  Initial Extended Umbrella staging release of Litecoin Fulcrum.
 backupIgnore:
   - data/fulcrum/fulc2_db
-submitter: RyleaStark
+submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

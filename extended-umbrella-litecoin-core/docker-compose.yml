@@ -1,8 +1,7 @@
-version: "3.7"
 services:
   app_proxy:
     environment:
-      APP_HOST: $APP_LITECOIN_NODE_IP
+      APP_HOST: extended-umbrella-litecoin-core_app_1
       APP_PORT: 3000
 
   app:
