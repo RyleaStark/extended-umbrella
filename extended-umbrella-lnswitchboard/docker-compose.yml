@@ -45,19 +45,17 @@ services:
       LND_HOST: "${APP_LIGHTNING_NODE_IP}"
       LND_GRPC_PORT: "10009"
       LND_TLS_PATH: "/lnd/tls.cert"
-      LND_MACAROON_PATH: "/lnd/data/chain/bitcoin/${BITCOIN_NETWORK}/admin.macaroon"
-      LND_MACAROON_TYPE: "admin"
-      LNS_BACKEND: "lnd"
-      LNS_TRUSTED_HOSTS: "*"
-      LNS_TRUSTED_PROXY_IPS: "10.21.0.0/16"
-      LNS_TRUSTED_PROXIES: "10.21.0.0/16"
+      LND_MACAROON_PATH: "/lnd/data/chain/bitcoin/${BITCOIN_NETWORK}/invoice.macaroon"
+      LND_READONLY_MACAROON_PATH: "/lnd/data/chain/bitcoin/${BITCOIN_NETWORK}/readonly.macaroon"
+      TRUSTED_HOSTS: "*"
+      TRUSTED_PROXY_CIDRS: "10.21.0.0/16"
       CLOUDFLARED_CONNECTOR_ENABLED: "true"
       CLOUDFLARED_TOKEN_PATH: "/app/cloudflare-mesh/node.env"
       CLOUDFLARED_TOKEN_GID: "1000"
       CLOUDFLARED_ORIGIN_URL: "http://lnswitchboard:21212"
       CLOUDFLARE_OAUTH_CLIENT_ID: "${CLOUDFLARE_OAUTH_CLIENT_ID:-}"
-      CLOUDFLARE_OAUTH_CALLBACK_URL: "${CLOUDFLARE_OAUTH_CALLBACK_URL:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
-      CLOUDFLARE_OAUTH_PAGE_CALLBACK_URL: "${CLOUDFLARE_OAUTH_PAGE_CALLBACK_URL:-https://oauth.lnswitchboard.app/callback/}"
+      CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK: "${CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
+      CLOUDFLARE_OAUTH_REDIRECT_PAGE: "${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://oauth.lnswitchboard.app/callback/}"
       TAILSCALE_CONNECTOR_ENABLED: "true"
       TAILSCALE_CONTROL_DIR: "/app/secrets/tailscale/control"
       TAILSCALE_STATUS_DIR: "/app/secrets/tailscale/status"
@@ -65,8 +63,6 @@ services:
       - ${APP_LIGHTNING_NODE_DATA_DIR}:/lnd:ro
       - ${APP_DATA_DIR}/data:/app/secrets
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app/cloudflare-mesh
-      - ${APP_DATA_DIR}/data/connectors/tailscale:/var/lib/tailscale
-      - ${APP_DATA_DIR}/data/connectors/tailscale-socket:/var/run/tailscale
     networks:
       default:
         aliases:
