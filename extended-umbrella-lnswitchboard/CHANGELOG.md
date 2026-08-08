@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc10 — 2026-08-08
+
+### Changed
+
+- Updates the existing package to verified multi-architecture RC10: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc10@sha256:5e41e96658bb7ce73a79d7ddcb931d716a80bc1f4ceafeedb61792348e8e1833`.
+- Cloudflare setup now selects an authorized DNS zone and uses its apex for Lightning Addresses; it configures the existing Zero Trust tunnel with only the LNURL-pay and NIP-05 Public Hostname paths.
+
+### Upgrade notes
+
+- Existing apex DNS records are never replaced. The package retains its public listener `21212` and private administration listener `22121` boundaries.
+
 ## 0.4.0.rc9 — 2026-08-08
 
 ### Fixed
