@@ -41,7 +41,7 @@ services:
     environment:
       SERVICE_PORT: "22121"
       PUBLIC_SERVICE_PORT: "21212"
-      LND_HOST: "${LND_IP}"
+      LND_HOST: "${APP_LIGHTNING_NODE_IP}"
       LND_GRPC_PORT: "10009"
       LND_TLS_PATH: "/lnd/tls.cert"
       LND_MACAROON_PATH: "/lnd/data/chain/bitcoin/${BITCOIN_NETWORK}/admin.macaroon"
