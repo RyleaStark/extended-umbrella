@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15 — 2026-08-08
+
+### Fixed
+
+- Updates lnSwitchboard to verified multi-architecture RC15: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857`.
+- Includes the repaired, verified Tailscale `v1.88.4` multi-platform index pin from the RC14 package hotfix so failed RC14 updates can recover directly to RC15.
+
 ## 0.4.0.rc14-umbrel.1 — 2026-08-08
 
 ### Fixed
