@@ -198,16 +198,33 @@ disconnect_node() {
     stop_login
     rm -f "$STATUS_DIR/login.json"
 
-    if ! "$TAILSCALE_BIN" --socket="$SOCKET" funnel reset \
-        >/dev/null 2>/dev/null; then
-        publish_ack "disconnect" "error" "funnel_disable_failed"
-        return
+    node_state=""
+    if [ -f "$STATUS_DIR/node.json" ]; then
+        node_state=$(sed -n 's/.*"BackendState": *"\([^"]*\)".*/\1/p' "$STATUS_DIR/node.json" | head -n 1)
     fi
-    if ! "$TAILSCALE_BIN" --socket="$SOCKET" logout \
-        >/dev/null 2>/dev/null; then
-        publish_ack "disconnect" "error" "logout_failed"
-        return
-    fi
+
+    case "$node_state" in
+        NeedsLogin|Stopped|"")
+            # An unauthenticated node is not funneling anything, and Funnel
+            # reset/logout are guaranteed to fail here (for example after the
+            # device key expired). Teardown must proceed so the operator can
+            # re-authenticate instead of being trapped in a dead connection.
+            ;;
+        *)
+            # A live node may still be serving Funnel traffic: stay
+            # fail-closed so a reported disconnect never leaves exposure.
+            if ! "$TAILSCALE_BIN" --socket="$SOCKET" funnel reset \
+                >/dev/null 2>/dev/null; then
+                publish_ack "disconnect" "error" "funnel_disable_failed"
+                return
+            fi
+            if ! "$TAILSCALE_BIN" --socket="$SOCKET" logout \
+                >/dev/null 2>/dev/null; then
+                publish_ack "disconnect" "error" "logout_failed"
+                return
+            fi
+            ;;
+    esac
 
     if [ -n "$TAILSCALED_PID" ]; then
         kill "$TAILSCALED_PID" 2>/dev/null || true
