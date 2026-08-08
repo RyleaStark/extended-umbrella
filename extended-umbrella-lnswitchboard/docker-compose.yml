@@ -12,13 +12,14 @@ services:
         install -d -m 0700 -o 1000 -g 1000 /cloudflare-mesh-token
         install -d -m 0700 -o 0 -g 0 /cloudflare-mesh-state
         install -d -m 0700 -o 1000 -g 1000 /tailscale-state
-        install -d -m 0700 -o 1000 -g 1000 /tailscale-socket
+        install -d -m 0700 -o 1000 -g 1000 /data/tailscale
+        install -d -m 0700 -o 1000 -g 1000 /data/tailscale/control
+        install -d -m 0700 -o 1000 -g 1000 /data/tailscale/status
     volumes:
       - ${APP_DATA_DIR}/data:/data
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/cloudflare-mesh-token
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/cloudflare-mesh-state
       - ${APP_DATA_DIR}/data/connectors/tailscale:/tailscale-state
-      - ${APP_DATA_DIR}/data/connectors/tailscale-socket:/tailscale-socket
     restart: "no"
 
   app_proxy:
@@ -58,12 +59,8 @@ services:
       CLOUDFLARE_OAUTH_CALLBACK_URL: "${CLOUDFLARE_OAUTH_CALLBACK_URL:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
       CLOUDFLARE_OAUTH_PAGE_CALLBACK_URL: "${CLOUDFLARE_OAUTH_PAGE_CALLBACK_URL:-https://oauth.lnswitchboard.app/callback/}"
       TAILSCALE_CONNECTOR_ENABLED: "true"
-      TAILSCALE_SOCKET_PATH: "/var/run/tailscale/tailscaled.sock"
-      TAILSCALE_METRICS_URL: "http://127.0.0.1:5252"
-      TAILSCALE_AUTH_KEY: "${TAILSCALE_AUTH_KEY:-}"
-      TAILSCALE_HOSTNAME: "lnswitchboard"
-      TAILSCALE_STATE_DIR: "/var/lib/tailscale"
-      TAILSCALE_SOCKET_DIR: "/var/run/tailscale"
+      TAILSCALE_CONTROL_DIR: "/app/secrets/tailscale/control"
+      TAILSCALE_STATUS_DIR: "/app/secrets/tailscale/status"
     volumes:
       - ${APP_LIGHTNING_NODE_DATA_DIR}:/lnd:ro
       - ${APP_DATA_DIR}/data:/app/secrets
@@ -114,32 +111,38 @@ services:
       - ${APP_DATA_DIR}/hooks/mesh-entrypoint.sh:/opt/lnswitchboard/mesh-entrypoint.sh:ro
 
   tailscale:
-    image: tailscale/tailscale:v1.88.4@sha256:360e10ad95ad03950f66df03e0dab66287f9f89076ee4012d50bc6adceafcdf3
+    image: tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24
     container_name: ${APP_ID}_tailscale
+    entrypoint: ["/usr/local/bin/lnswitchboard-tailscale-supervisor"]
     user: "1000:1000"
     restart: on-failure
+    stop_grace_period: 30s
     depends_on:
-      init:
-        condition: service_completed_successfully
+      lnswitchboard:
+        condition: service_healthy
     network_mode: service:lnswitchboard
     read_only: true
     cap_drop:
       - ALL
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    tmpfs:
-      - /tmp:size=16m,mode=1777
-      - /run:size=16m,mode=0755
+    security_opt:
+      - no-new-privileges:true
     environment:
       TS_STATE_DIR: /var/lib/tailscale
       TS_SOCKET: /var/run/tailscale/tailscaled.sock
-      TS_USERSPACE: "false"
-      TS_ENABLE_METRICS: "true"
-      TS_LOCAL_ADDR_PORT: "127.0.0.1:5252"
+      TS_USERSPACE: "true"
+      TS_CONTROL_DIR: /run/lnswitchboard/control
+      TS_STATUS_DIR: /run/lnswitchboard/status
+      TS_LOGIN_RETENTION_SECONDS: "300"
+      TS_NO_LOGS_NO_SUPPORT: "true"
     volumes:
       - ${APP_DATA_DIR}/data/connectors/tailscale:/var/lib/tailscale
-      - ${APP_DATA_DIR}/data/connectors/tailscale-socket:/var/run/tailscale
-      - ${APP_DATA_DIR}/hooks/tailscale-supervisor:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
+      - ${APP_DATA_DIR}/data/tailscale:/run/lnswitchboard
+      - ${APP_DATA_DIR}/hooks/tailscale-supervisor.sh:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
+    tmpfs:
+      - /var/run/tailscale:size=16m,mode=0750,uid=1000,gid=1000
+    healthcheck:
+      test: ["CMD-SHELL", "test -S /var/run/tailscale/tailscaled.sock"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

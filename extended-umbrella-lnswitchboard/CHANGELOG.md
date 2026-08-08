@@ -2,6 +2,16 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.4 — 2026-08-08
+
+### Fixed
+
+- Runs the reviewed lnSwitchboard Tailscale supervisor as the sidecar entrypoint instead of bypassing it with Tailscale's generic `containerboot` command.
+- Uses unprivileged userspace networking with every Linux capability dropped, no TUN device, and `no-new-privileges`, eliminating the kernel-network permission restart loop seen on the live Umbrel host.
+- Shares the application's private Tailscale control/status directory with the supervisor so browser-executed login, Funnel, and disconnect commands work without a Docker socket.
+- Upgrades and pins the current Tailscale `v1.102.2` multi-platform index and disables Tailscale client log uploads with `TS_NO_LOGS_NO_SUPPORT=true`.
+- Corrects the packaged supervisor hook filename and adds a local socket health check.
+
 ## 0.4.0.rc15-umbrel.3 — 2026-08-08
 
 ### Fixed
