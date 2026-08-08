@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.5 — 2026-08-08
+
+### Fixed
+
+- Replaces obsolete `LNS_*` and legacy OAuth callback environment names with the RC15 configuration contract, allowing Umbrel's app proxy host to reach the administration listener instead of receiving HTTP 400.
+- Uses the invoice and readonly LND macaroons required by RC15 instead of exposing the unrestricted admin macaroon to the application.
+- Removes the application's unnecessary mounts of Tailscale's private node state and LocalAPI socket; browser-controlled Tailscale operations remain isolated to the reviewed control/status file protocol.
+
 ## 0.4.0.rc15-umbrel.4 — 2026-08-08
 
 ### Fixed
