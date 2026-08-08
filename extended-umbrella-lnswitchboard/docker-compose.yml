@@ -31,7 +31,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc14@sha256:80659be0e48830e008524e75785b1c9b688c7ad45acb1b1dbbaf60c1f9912d4b
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
