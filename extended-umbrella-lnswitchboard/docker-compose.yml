@@ -1,133 +1,148 @@
+version: "3.7"
+
 services:
+  init:
+    image: alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
+    container_name: ${APP_ID}_init
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        install -d -m 0750 -o 1000 -g 1000 /data
+        install -d -m 0750 -o 1000 -g 1000 /data/tls
+        install -d -m 0700 -o 1000 -g 1000 /cloudflare-mesh-token
+        install -d -m 0700 -o 0 -g 0 /cloudflare-mesh-state
+        install -d -m 0700 -o 1000 -g 1000 /tailscale-state
+        install -d -m 0700 -o 1000 -g 1000 /tailscale-socket
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/cloudflare-mesh-token
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/cloudflare-mesh-state
+      - ${APP_DATA_DIR}/data/connectors/tailscale:/tailscale-state
+      - ${APP_DATA_DIR}/data/connectors/tailscale-socket:/tailscale-socket
+    restart: "no"
+
   app_proxy:
     environment:
-      APP_HOST: extended-umbrella-lnswitchboard_app_1
+      APP_HOST: lnswitchboard
       APP_PORT: 22121
-      PROXY_AUTH_WHITELIST: "/.well-known/*"
+    depends_on:
+      lnswitchboard:
+        condition: service_healthy
+    restart: on-failure
 
-  # Umbrel creates APP_DATA_DIR paths as root. This one-shot, unprivileged-from-
-  # the-host init service makes only the shared connector paths writable by the
-  # application and readable by the Cloudflared sidecar.
-  connector_init:
-    image: tailscale/tailscale:v1.98.10@sha256:cdf5612ded5be1344f1a704b8c5e53496db97376bb533e5e15f141e48bf60cc0
-    user: "0:0"
-    entrypoint: ["/bin/sh", "-ec"]
-    command:
-      - |
-        install -d -m 0770 -o 1000 -g 65532 /cloudflared
-        install -d -m 0700 -o 1000 -g 1000 /tailscale/control /tailscale/status
-        install -d -m 0700 -o 1000 -g 1000 /tailscale-state
-    volumes:
-      - ${APP_DATA_DIR}/data/connectors/cloudflared:/cloudflared
-      - ${APP_DATA_DIR}/data/connectors/tailscale:/tailscale
-      - ${APP_DATA_DIR}/data/connectors/tailscale/state:/tailscale-state
-
-  app:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc12@sha256:7b6bc8e30e5b1ccf5cc11ee764d0503ada7717945f2f02913b2b3404dabb8561
+  lnswitchboard:
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc14@sha256:80659be0e48830e008524e75785b1c9b688c7ad45acb1b1dbbaf60c1f9912d4b
+    container_name: ${APP_ID}_web
     user: "1000:1000"
-    group_add:
-      - "65532"
     restart: on-failure
     depends_on:
-      connector_init:
+      init:
         condition: service_completed_successfully
     environment:
-      SERVICE_PORT: 22121
-      PUBLIC_SERVICE_PORT: 21212
-      LND_HOST: "$APP_LIGHTNING_NODE_IP"
-      LND_GRPC_PORT: "$APP_LIGHTNING_NODE_GRPC_PORT"
-      DATA_STORE_PATH: "/app/secrets/lnswitchboard.db"
-      NOSTR_ZAP_SECRET_PATH: "/app/secrets/nostr_zap_signer.hex"
+      SERVICE_PORT: "22121"
+      PUBLIC_SERVICE_PORT: "21212"
+      LND_HOST: "${LND_IP}"
+      LND_GRPC_PORT: "10009"
       LND_TLS_PATH: "/lnd/tls.cert"
-      LND_MACAROON_PATH: "/lnd/invoice.macaroon"
-      LND_READONLY_MACAROON_PATH: "/lnd/readonly.macaroon"
-      TRUSTED_PROXY_CIDRS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"
-      TRUSTED_HOSTS: "*"
-      DEP_ENV: "UMBREL-DEV"
+      LND_MACAROON_PATH: "/lnd/data/chain/bitcoin/${BITCOIN_NETWORK}/admin.macaroon"
+      LND_MACAROON_TYPE: "admin"
+      LNS_BACKEND: "lnd"
+      LNS_DATA_DIR: "/app/data"
+      LNS_TRUSTED_HOSTS: "*"
+      LNS_TRUSTED_PROXY_IPS: "10.21.0.0/16"
+      LNS_TRUSTED_PROXIES: "10.21.0.0/16"
       CLOUDFLARED_CONNECTOR_ENABLED: "true"
-      CLOUDFLARED_TOKEN_PATH: "/app/cloudflared/tunnel.token"
-      CLOUDFLARED_TOKEN_GID: "65532"
-      CLOUDFLARED_METRICS_URL: "http://cloudflared:2000"
-      CLOUDFLARED_ORIGIN_URL: "http://app:21212"
+      CLOUDFLARED_TOKEN_PATH: "/app/cloudflare-mesh/node.env"
+      CLOUDFLARED_TOKEN_GID: "1000"
+      CLOUDFLARED_ORIGIN_URL: "http://lnswitchboard:21212"
+      CLOUDFLARE_OAUTH_CLIENT_ID: "${CLOUDFLARE_OAUTH_CLIENT_ID:-}"
+      CLOUDFLARE_OAUTH_CALLBACK_URL: "${CLOUDFLARE_OAUTH_CALLBACK_URL:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
+      CLOUDFLARE_OAUTH_PAGE_CALLBACK_URL: "${CLOUDFLARE_OAUTH_PAGE_CALLBACK_URL:-https://oauth.lnswitchboard.app/callback/}"
       TAILSCALE_CONNECTOR_ENABLED: "true"
-      TAILSCALE_CONTROL_DIR: "/app/tailscale/control"
-      TAILSCALE_STATUS_DIR: "/app/tailscale/status"
+      TAILSCALE_SOCKET_PATH: "/var/run/tailscale/tailscaled.sock"
+      TAILSCALE_METRICS_URL: "http://127.0.0.1:5252"
+      TAILSCALE_AUTH_KEY: "${TAILSCALE_AUTH_KEY:-}"
+      TAILSCALE_HOSTNAME: "lnswitchboard"
+      TAILSCALE_STATE_DIR: "/var/lib/tailscale"
+      TAILSCALE_SOCKET_DIR: "/var/run/tailscale"
     volumes:
-      - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/invoice.macaroon:/lnd/invoice.macaroon:ro
-      - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/readonly.macaroon:/lnd/readonly.macaroon:ro
-      - ${APP_LIGHTNING_NODE_DATA_DIR}/tls.cert:/lnd/tls.cert:ro
-      - ${APP_DATA_DIR}/data/secrets:/app/secrets:rw
-      - ${APP_DATA_DIR}/data/connectors/cloudflared:/app/cloudflared
-      - ${APP_DATA_DIR}/data/connectors/tailscale:/app/tailscale
-    # Self-hosted publication path. This is only the route-restricted public
-    # listener; the administrative listener on 22121 remains proxy-only.
-    ports:
-      - "21212:21212"
-    expose:
-      - "21212"
+      - ${APP_LIGHTNING_NODE_DATA_DIR}:/lnd:ro
+      - ${APP_DATA_DIR}/data:/app/data
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app/cloudflare-mesh
+      - ${APP_DATA_DIR}/data/connectors/tailscale:/var/lib/tailscale
+      - ${APP_DATA_DIR}/data/connectors/tailscale-socket:/var/run/tailscale
+    networks:
+      default:
+        aliases:
+          - lns.internal
     healthcheck:
-      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:22121/api/health', timeout=3).read()"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:22121/health', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
       start_period: 20s
 
-  cloudflared:
-    image: cloudflare/cloudflared:2026.7.3@sha256:e39ee8da81ad5e05d77f38d2f51c60ca51bf2a8450ac3abab50c17fdb91d91bf
-    user: "65532:65532"
-    entrypoint: ["cloudflared"]
-    command: ["tunnel", "--autoupdate-freq", "24h", "--metrics", "0.0.0.0:2000", "run", "--token-file", "/run/lnswitchboard/tunnel.token"]
-    restart: unless-stopped
+  cloudflare-mesh:
+    image: cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571
+    container_name: ${APP_ID}_cloudflare-mesh
+    entrypoint: ["sh", "/opt/lnswitchboard/mesh-entrypoint.sh"]
+    restart: on-failure
     stop_grace_period: 30s
     depends_on:
-      app:
+      init:
+        condition: service_completed_successfully
+      lnswitchboard:
         condition: service_healthy
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv6.conf.all.forwarding: "1"
+    environment:
+      MESH_NODE_TOKEN_FILE: /run/lnswitchboard/node.env
     volumes:
-      - ${APP_DATA_DIR}/data/connectors/cloudflared:/run/lnswitchboard:ro
-    healthcheck:
-      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:2000", "ready"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/run/lnswitchboard:ro
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/var/lib/cloudflare-warp
+      - ${APP_DATA_DIR}/hooks/mesh-entrypoint.sh:/opt/lnswitchboard/mesh-entrypoint.sh:ro
 
   tailscale:
-    image: tailscale/tailscale:v1.98.10@sha256:cdf5612ded5be1344f1a704b8c5e53496db97376bb533e5e15f141e48bf60cc0
+    image: tailscale/tailscale:v1.88.4@sha256:b2fe3ebd9c8a8fdb48c0f92dc0bd582216f68b88b3082e1047974035d2414284
+    container_name: ${APP_ID}_tailscale
     user: "1000:1000"
-    entrypoint: ["/usr/local/bin/lnswitchboard-tailscale-supervisor"]
-    restart: unless-stopped
-    stop_grace_period: 30s
+    restart: on-failure
     depends_on:
-      app:
-        condition: service_healthy
-      connector_init:
+      init:
         condition: service_completed_successfully
-    network_mode: service:app
+    network_mode: service:lnswitchboard
     read_only: true
     cap_drop:
       - ALL
-    security_opt:
-      - no-new-privileges:true
-    environment:
-      TS_STATE_DIR: "/var/lib/tailscale"
-      TS_SOCKET: "/var/run/tailscale/tailscaled.sock"
-      TS_USERSPACE: "true"
-      TS_CONTROL_DIR: "/run/lnswitchboard/control"
-      TS_STATUS_DIR: "/run/lnswitchboard/status"
-      TS_LOGIN_RETENTION_SECONDS: "300"
-      TS_SHARED_UID: "1000"
-      TS_SHARED_GID: "1000"
-    volumes:
-      - ${APP_DATA_DIR}/data/connectors/tailscale/state:/var/lib/tailscale
-      - ${APP_DATA_DIR}/data/connectors/tailscale:/run/lnswitchboard
-      # Umbrel legacy compatibility copies hooks/ byte-for-byte, unlike
-      # arbitrary package-root files (which are omitted on install/update).
-      - ${APP_DATA_DIR}/hooks/tailscale-supervisor.sh:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
     tmpfs:
-      - /var/run/tailscale:mode=0750,uid=1000,gid=1000
-    healthcheck:
-      test: ["CMD-SHELL", "test -S /var/run/tailscale/tailscaled.sock"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      - /tmp:size=16m,mode=1777
+      - /run:size=16m,mode=0755
+    environment:
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SOCKET: /var/run/tailscale/tailscaled.sock
+      TS_USERSPACE: "false"
+      TS_ENABLE_METRICS: "true"
+      TS_LOCAL_ADDR_PORT: "127.0.0.1:5252"
+    volumes:
+      - ${APP_DATA_DIR}/data/connectors/tailscale:/var/lib/tailscale
+      - ${APP_DATA_DIR}/data/connectors/tailscale-socket:/var/run/tailscale
+      - ${APP_DATA_DIR}/hooks/tailscale-supervisor:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
