@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc14-umbrel.1 — 2026-08-08
+
+### Fixed
+
+- Repairs RC14 installs and updates after Docker Hub removed the previously pinned Tailscale `v1.88.4` manifest. The package now pins the currently published, verified multi-architecture index `tailscale/tailscale:v1.88.4@sha256:360e10ad95ad03950f66df03e0dab66287f9f89076ee4012d50bc6adceafcdf3`.
+- The lnSwitchboard application remains the immutable RC14 image at `sha256:80659be0e48830e008524e75785b1c9b688c7ad45acb1b1dbbaf60c1f9912d4b`; this is a packaging-only revision.
+
 ## 0.4.0.rc14 — 2026-08-08
 
 ### Changed

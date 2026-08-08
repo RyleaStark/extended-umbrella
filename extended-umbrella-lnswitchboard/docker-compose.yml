@@ -1,5 +1,3 @@
-version: "3.7"
-
 services:
   init:
     image: alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
@@ -117,7 +115,7 @@ services:
       - ${APP_DATA_DIR}/hooks/mesh-entrypoint.sh:/opt/lnswitchboard/mesh-entrypoint.sh:ro
 
   tailscale:
-    image: tailscale/tailscale:v1.88.4@sha256:b2fe3ebd9c8a8fdb48c0f92dc0bd582216f68b88b3082e1047974035d2414284
+    image: tailscale/tailscale:v1.88.4@sha256:360e10ad95ad03950f66df03e0dab66287f9f89076ee4012d50bc6adceafcdf3
     container_name: ${APP_ID}_tailscale
     user: "1000:1000"
     restart: on-failure
