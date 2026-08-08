@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.1 — 2026-08-08
+
+### Fixed
+
+- Uses Umbrel's actual Lightning dependency export, `APP_LIGHTNING_NODE_IP`, for `LND_HOST`. The previous `LND_IP` reference expanded to an empty value during an update, causing RC15 to restart continuously with `LND_HOST` missing.
+
 ## 0.4.0.rc15 — 2026-08-08
 
 ### Fixed
