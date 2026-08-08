@@ -2,6 +2,18 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc9 — 2026-08-08
+
+### Fixed
+
+- Updates the existing package to verified multi-architecture RC9: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc9@sha256:f557a9a76d9c08a2326fe5203210a69e374a734af6d0233dcd7b10e84851050b`.
+- Corrects Cloudflare authorization for valid scoped user tokens that can directly access the selected tunnel but cannot enumerate every account, and clarifies tunnel UUID versus connector-token setup.
+- Warns when the registered Tailscale node has key expiry enabled, including its remaining reconnect interval.
+
+### Upgrade notes
+
+- Funnel continues to expose only `:443 → 127.0.0.1:21212`; administration on port `22121` remains unavailable through Funnel.
+
 ## 0.4.0.rc8 — 2026-08-07
 
 ### Changed
