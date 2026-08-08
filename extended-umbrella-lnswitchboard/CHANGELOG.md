@@ -2,6 +2,20 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc11 — 2026-08-08
+
+### Fixed
+
+- Updates the existing package to verified multi-architecture RC11: `ghcr.io/ryleastark/lnswitchboard:0.4.0.rc11@sha256:996e6bb067617717f04137745f3152734bc5a46426c34cfc55fe13f414fc3a81`.
+- Tailscale disconnect/refresh no longer jam when the device key has expired: an unauthenticated node skips Funnel reset and logout and always completes teardown, so the operator can re-authenticate. Live nodes keep the fail-closed disconnect.
+- Public endpoint hardening: rate-limit identity now walks proxy chains right-to-left across trusted hops; forwarded LNURL callback/verify fetches require public destinations with pinned DNS, no redirects, and bounded responses; verify errors no longer echo internals.
+- Cloudflare provisioning writes the two published application routes and lets Cloudflare judge existing apex DNS.
+- Visual polish: slimmer dashboard metric cards, bare page headers, and no stray settings-tab scrollbar.
+
+### Upgrade notes
+
+- The packaged Tailscale supervisor hook is synced with the RC11 disconnect fix; the update restarts the sidecar with the fixed logic.
+
 ## 0.4.0.rc10 — 2026-08-08
 
 ### Changed
