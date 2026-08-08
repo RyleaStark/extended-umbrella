@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-core
 category: bitcoin
 name: "Litecoin Core"
-version: "0.21.5.5-umbrel.2"
+version: "0.21.5.5-umbrel.3"
 tagline: "Run your personal Litecoin node"
 
 description: >-
@@ -11,7 +11,7 @@ description: >-
 
   The node uses the official Litecoin Core v0.21.5.5 image, pinned by immutable digest. Its Umbrel UI is a Litecoin-specific adaptation of Umbrel's Bitcoin Node interface with silver Litecoin branding.
 releaseNotes: >-
-  Initial Extended Umbrella staging release of Litecoin Core.
+  Adds complete startup hooks and writable data-directory initialization for the unprivileged Litecoin Core process, plus persistent RPC credentials and Tor hidden-service startup.
 
 developer: Litecoin Project and RyleaStark
 website: https://litecoin.org

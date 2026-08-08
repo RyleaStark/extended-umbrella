@@ -8,6 +8,7 @@ services:
     depends_on: [fulcrum]
     restart: on-failure
     environment:
+      ELECTRUM_HIDDEN_SERVICE: "${APP_LITECOIN_FULCRUM_RPC_HIDDEN_SERVICE}"
       ELECTRUM_LOCAL_SERVICE: "${DEVICE_DOMAIN_NAME}"
       ELECTRUM_HOST: "${APP_LITECOIN_FULCRUM_NODE_IP}"
       ELECTRUM_PUBLIC_CONNECTION_PORT: "${APP_LITECOIN_FULCRUM_NODE_PORT}"
@@ -33,8 +34,25 @@ services:
       PEERING: "false"
       ANNOUNCE: "false"
       DATA_DIR: /data
-    command: 'Fulcrum -D /data _ENV_'
-    volumes: ["${APP_DATA_DIR}/data/fulcrum:/data"]
+    command: >
+      sh -c 'rm -f /tmp/fulcrum.pipe; mkfifo /tmp/fulcrum.pipe;
+      tee -a /logs/fulcrum.log < /tmp/fulcrum.pipe &
+      exec Fulcrum -D /data _ENV_ > /tmp/fulcrum.pipe 2>&1'
+    volumes:
+      - "${APP_DATA_DIR}/data/fulcrum:/data"
+      - "${APP_DATA_DIR}/data/fulcrum-logs:/logs"
     ports: ["${APP_LITECOIN_FULCRUM_NODE_PORT}:${APP_LITECOIN_FULCRUM_NODE_PORT}"]
     networks:
       default: {ipv4_address: $APP_LITECOIN_FULCRUM_NODE_IP}
+
+  tor:
+    image: ghcr.io/getumbrel/tor:0.4.9.11@sha256:e382b8629c0dfef6ceb396b062622d4e4e955b19d6f16b883fd2c0723ad5671a
+    user: "1000:1000"
+    restart: on-failure
+    volumes:
+      - ${APP_DATA_DIR}/torrc:/etc/tor/torrc:ro
+      - ${TOR_DATA_DIR}:/data
+    environment:
+      HOME: "/tmp"
+    networks:
+      default: {ipv4_address: $APP_LITECOIN_FULCRUM_TOR_IP}

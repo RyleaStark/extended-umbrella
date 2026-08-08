@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.3 — 2026-08-08
+
+### Fixed
+
+- Creates and repairs ownership and user-write permissions for Fulcrum database and log directories before startup.
+- Restores the Tor sidecar, hidden-service template and export, persistent log capture, and package data skeleton.
+- Adds the Fulcrum LTC app icon.
+
 ## 2.1.1-umbrel.1 — 2026-08-08
 
 ### Changed

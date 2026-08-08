@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-fulcrum
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.2"
+version: "2.1.1-umbrel.3"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -18,7 +18,7 @@ gallery: []
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Initial Extended Umbrella staging release of Litecoin Fulcrum.
+  Adds writable Fulcrum data and log initialization, Tor hidden-service support, and persistent Fulcrum log capture for the management UI.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"
