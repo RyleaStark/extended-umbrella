@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4'
 docker run --rm -i --platform linux/arm64 --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 import io
@@ -20,7 +20,7 @@ address_store=LNAddressStore(db_path)
 secret_url='https://hooks.invalid/services/PERSISTED_PATH_SECRET?token=PERSISTED_QUERY_SECRET'
 stream=io.StringIO()
 handler=logging.StreamHandler(stream)
-logger=logging.getLogger('rc17-persisted-log-redaction-fixture')
+logger=logging.getLogger('rc18-persisted-log-redaction-fixture')
 logger.handlers[:]=[handler]
 logger.setLevel(logging.INFO)
 logger.propagate=False
@@ -78,11 +78,10 @@ for secret in ('PERSISTED_PATH_SECRET','PERSISTED_QUERY_SECRET','PERSISTED_EXCEP
     assert secret not in persisted, persisted
     assert secret not in stream.getvalue(), stream.getvalue()
 
-# Model data persisted by RC16, clear only the one-time migration marker, and
-# prove RC17 scrubs historical delivery-log fields before API exposure.
+# Model data persisted by RC16 while the migration marker remains, and prove
+# RC18 re-scrubs the history during rollback/re-upgrade.
 now=datetime.now(tz=timezone.utc).isoformat()
 with sqlite3.connect(db_path) as conn:
-    conn.execute("DELETE FROM lnswitchboard_migrations WHERE name='webhook_history_redaction_v1'")
     conn.execute(
         """INSERT INTO webhook_deliveries
         (created_at,updated_at,kind,event,target,status,payload,headers,address_id,invoice_event_id,request_log_id,delivery_key)
@@ -107,5 +106,5 @@ with sqlite3.connect(db_path) as conn:
     },sort_keys=True)
 for secret in ('LEGACY_PATH_SECRET','LEGACY_QUERY_SECRET','LEGACY_SIGNATURE_SECRET','LEGACY_EXCEPTION_SECRET','LEGACY_RESPONSE_SECRET','LEGACY_MESSAGE_SECRET','LEGACY_DETAILS_SECRET'):
     assert secret not in legacy, legacy
-print('GREEN exact_rc17_webhook_logs_and_apis_redact_persisted_secrets')
+print('GREEN exact_rc18_webhook_logs_rescrub_after_rollback')
 PY

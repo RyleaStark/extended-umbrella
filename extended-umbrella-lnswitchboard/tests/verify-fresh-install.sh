@@ -81,7 +81,7 @@ done
 [ "$web_health" = healthy ]
 [ "$ts_health" = healthy ]
 
-# Exercise Umbrel-proxy-shaped requests against the actual RC17 listener.
+# Exercise Umbrel-proxy-shaped requests against the actual RC18 listener.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import urllib.request
 headers = {
@@ -97,7 +97,7 @@ for path in ('/', '/api/health'):
 print('GREEN fresh_install_proxy_routes_ok')
 PY
 
-# Seed through RC17, remove both runtime containers, recreate them, and prove
+# Seed through RC18, remove both runtime containers, recreate them, and prove
 # the persisted database remains intact rather than living in a container layer.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import asyncio

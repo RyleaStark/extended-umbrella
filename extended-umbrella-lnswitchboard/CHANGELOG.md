@@ -2,11 +2,11 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
-## 0.4.0.rc17-umbrel.1 — 2026-08-08
+## 0.4.0.rc18-umbrel.1 — 2026-08-08
 
 ### Fixed
 
-- Pins the immutable multi-platform RC17 image built from exact merged source `52fd8ac6e7c972c72dd2e1b650ef83d7f73cb331`; RC17 replaces persisted webhook destinations with non-reversible references, strips signing headers, exception text, and response bodies from delivery history, and scrubs legacy operator-visible webhook logs.
+- Pins the immutable multi-platform RC18 image built from exact merged source `2538ef2f5a77af3734470f76266e079d03a95c34`; RC18 replaces persisted webhook destinations with non-reversible references, strips signing headers, exception text, response bodies, and payloads from operator-visible history, and idempotently re-scrubs legacy rows after rollback/re-upgrade.
 - Enables the authoritative `UMBREL` deployment mode so authenticated App Proxy requests from remote clients reach the administration listener.
 - Preserves rollback compatibility with interim RC15 packages through exact relative links to the canonical `data/secrets` state tree, so records remain live across upgrade, rollback, and re-upgrade.
 - Uses atomic no-overwrite state commits, rejects ambiguous disjoint dual-layout bundles, recovers migration-owned backup-only and suffixed-backup transactions, preserves rollback-created keys and sidecars, resumes torn directory archives, rejects hard links and untrusted reserved paths, and masks connector state from the privileged migration service.

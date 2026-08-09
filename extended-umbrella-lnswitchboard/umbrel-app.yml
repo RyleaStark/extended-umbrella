@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc17-umbrel.1"
+version: "0.4.0.rc18-umbrel.1"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  Preserves historical and interim database records across upgrades, rollbacks, and re-upgrades with fail-closed transactional recovery. Includes RC17 persisted webhook secret redaction, authenticated Umbrel proxy mode, exact LND mounts, and corrected Mesh and Tailscale runtime isolation.
+  Preserves historical and interim database records across upgrades, rollbacks, and re-upgrades with fail-closed transactional recovery. Includes RC18 idempotent webhook-history secret redaction, authenticated Umbrel proxy mode, exact LND mounts, and corrected Mesh and Tailscale runtime isolation.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

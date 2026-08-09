@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-archive-recovery-${RANDOM}-$$"
 export APP_ID="$PROJECT"
