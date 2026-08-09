@@ -1,47 +1,94 @@
 services:
-  init:
-    image: alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
-    container_name: ${APP_ID}_init
-    command:
-      - sh
-      - -c
-      - |
-        set -eu
-        install -d -m 0750 -o 1000 -g 1000 /data
-        install -d -m 0750 -o 1000 -g 1000 /data/tls
-        install -d -m 0700 -o 1000 -g 1000 /cloudflare-mesh-token
-        install -d -m 0700 -o 0 -g 0 /cloudflare-mesh-state
-        install -d -m 0700 -o 1000 -g 1000 /tailscale-state
-        install -d -m 0700 -o 1000 -g 1000 /data/tailscale
-        install -d -m 0700 -o 1000 -g 1000 /data/tailscale/control
-        install -d -m 0700 -o 1000 -g 1000 /data/tailscale/status
+  state_migrate:
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
+    container_name: ${APP_ID}_state-migrate
+    user: "0:0"
+    entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      - ${APP_DATA_DIR}/data:/data
-      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/cloudflare-mesh-token
-      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/cloudflare-mesh-state
+      - ${APP_DATA_DIR}/data:/app-data
+      - ${APP_DATA_DIR}/data:/host-view:ro
+      - ${APP_DATA_DIR}/hooks/state-migrate.py:/opt/lnswitchboard/state-migrate.py:ro
+    tmpfs:
+      - /tmp:size=16m,mode=0700
+      - /app-data/connectors:size=64k,mode=000
+    restart: "no"
+
+  permissions-init:
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
+    container_name: ${APP_ID}_permissions-init
+    depends_on:
+      state_migrate:
+        condition: service_completed_successfully
+    user: "0:0"
+    entrypoint: ["python", "/opt/lnswitchboard/prepare-state-guard.py"]
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${APP_DATA_DIR}/data:/host-view:ro
+      - ${APP_DATA_DIR}/data/secrets:/app-secrets
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app-secrets/cloudflare-mesh
+      - ${APP_DATA_DIR}/data/secrets/tailscale:/tailscale-control
       - ${APP_DATA_DIR}/data/connectors/tailscale:/tailscale-state
+      - ${APP_DATA_DIR}/data/public-backend:/public-socket
+      - ${APP_DATA_DIR}/data/proxy-config:/proxy-config
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/cloudflare-mesh-state
+      - ${APP_DATA_DIR}/hooks/prepare-state-guard.py:/opt/lnswitchboard/prepare-state-guard.py:ro
     restart: "no"
 
   app_proxy:
     environment:
       APP_HOST: lnswitchboard
       APP_PORT: 22121
+      LOG_LEVEL: silent
+      CUSTOM_DOTENV_FILE: /lnswitchboard-proxy-config/app-proxy.env
+    volumes:
+      - ${APP_DATA_DIR}/data/proxy-config:/lnswitchboard-proxy-config:ro
     depends_on:
       lnswitchboard:
         condition: service_healthy
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
     depends_on:
-      init:
+      permissions-init:
         condition: service_completed_successfully
+    read_only: true
+    mem_limit: 256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
     environment:
+      LISTENER_MODE: admin
+      DATA_STORE_PATH: /app/secrets/lnswitchboard.db
+      PUBLIC_BACKEND_SOCKET_PATH: /run/lnswitchboard-public/public.sock
       SERVICE_PORT: "22121"
       PUBLIC_SERVICE_PORT: "21212"
+      DEP_ENV: "UMBREL"
       LND_HOST: "${APP_LIGHTNING_NODE_IP}"
       LND_GRPC_PORT: "10009"
       LND_TLS_PATH: "/lnd/tls.cert"
@@ -50,12 +97,12 @@ services:
       TRUSTED_HOSTS: "*"
       TRUSTED_PROXY_CIDRS: "10.21.0.0/16"
       CLOUDFLARED_CONNECTOR_ENABLED: "true"
-      CLOUDFLARED_TOKEN_PATH: "/app/cloudflare-mesh/node.env"
+      CLOUDFLARED_TOKEN_PATH: "/app/secrets/cloudflare-mesh/node.env"
       CLOUDFLARED_TOKEN_GID: "1000"
-      CLOUDFLARED_ORIGIN_URL: "http://lnswitchboard:21212"
+      CLOUDFLARED_ORIGIN_URL: "http://lnswitchboard-public:21212"
       CLOUDFLARE_OAUTH_CLIENT_ID: "${CLOUDFLARE_OAUTH_CLIENT_ID:-}"
       CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK: "${CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
-      CLOUDFLARE_OAUTH_REDIRECT_PAGE: "${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://oauth.lnswitchboard.app/callback/}"
+      CLOUDFLARE_OAUTH_REDIRECT_PAGE: "${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://placeholder.invalid/oauth/callback}"
       TAILSCALE_CONNECTOR_ENABLED: "true"
       TAILSCALE_CONTROL_DIR: "/app/secrets/tailscale/control"
       TAILSCALE_STATUS_DIR: "/app/secrets/tailscale/status"
@@ -63,18 +110,62 @@ services:
       - ${APP_LIGHTNING_NODE_DATA_DIR}/tls.cert:/lnd/tls.cert:ro
       - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/invoice.macaroon:/lnd/invoice.macaroon:ro
       - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/readonly.macaroon:/lnd/readonly.macaroon:ro
-      - ${APP_DATA_DIR}/data:/app/secrets
-      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app/cloudflare-mesh
+      - ${APP_DATA_DIR}/data/secrets:/app/secrets
+      - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app/secrets/cloudflare-mesh
+      - ${APP_DATA_DIR}/data/public-backend:/run/lnswitchboard-public
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:22121/api/health', timeout=2).read()"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  lnswitchboard-public:
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
+    container_name: ${APP_ID}_public
+    user: "1000:1000"
+    restart: on-failure
+    depends_on:
+      permissions-init:
+        condition: service_completed_successfully
+      lnswitchboard:
+        condition: service_healthy
+    read_only: true
+    mem_limit: 128m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    environment:
+      LISTENER_MODE: public
+      PUBLIC_BACKEND_SOCKET_PATH: /run/lnswitchboard-public/public.sock
+      PUBLIC_SERVICE_PORT: "21212"
+    volumes:
+      - ${APP_DATA_DIR}/data/public-backend:/run/lnswitchboard-public:ro
+    ports:
+      - "21212:21212"
     networks:
-      default:
+      cloudflare-egress:
         aliases:
+          - lnswitchboard-public
           - lns.internal
     healthcheck:
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:22121/api/health', timeout=2)"
+        - >-
+          import urllib.error, urllib.request;
+          url='http://127.0.0.1:21212/api/health';
+          code=None;
+          exec("try:\n urllib.request.urlopen(url, timeout=2).read()\nexcept urllib.error.HTTPError as exc:\n code=exc.code");
+          raise SystemExit(0 if code == 404 else 1)
       interval: 10s
       timeout: 3s
       retries: 5
@@ -86,10 +177,12 @@ services:
     entrypoint: ["sh", "/opt/lnswitchboard/mesh-entrypoint.sh"]
     restart: on-failure
     stop_grace_period: 30s
+    group_add:
+      - "1000"
     depends_on:
-      init:
+      permissions-init:
         condition: service_completed_successfully
-      lnswitchboard:
+      lnswitchboard-public:
         condition: service_healthy
     cap_drop:
       - ALL
@@ -101,12 +194,15 @@ services:
     sysctls:
       net.ipv4.ip_forward: "1"
       net.ipv6.conf.all.forwarding: "1"
+      net.ipv6.conf.default.forwarding: "1"
     environment:
       MESH_NODE_TOKEN_FILE: /run/lnswitchboard/node.env
     volumes:
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/run/lnswitchboard:ro
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/var/lib/cloudflare-warp
       - ${APP_DATA_DIR}/hooks/mesh-entrypoint.sh:/opt/lnswitchboard/mesh-entrypoint.sh:ro
+    networks:
+      - cloudflare-egress
 
   tailscale:
     image: tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24
@@ -116,9 +212,11 @@ services:
     restart: on-failure
     stop_grace_period: 30s
     depends_on:
-      lnswitchboard:
+      permissions-init:
+        condition: service_completed_successfully
+      lnswitchboard-public:
         condition: service_healthy
-    network_mode: service:lnswitchboard
+    network_mode: service:lnswitchboard-public
     read_only: true
     cap_drop:
       - ALL
@@ -134,7 +232,7 @@ services:
       TS_NO_LOGS_NO_SUPPORT: "true"
     volumes:
       - ${APP_DATA_DIR}/data/connectors/tailscale:/var/lib/tailscale
-      - ${APP_DATA_DIR}/data/tailscale:/run/lnswitchboard
+      - ${APP_DATA_DIR}/data/secrets/tailscale:/run/lnswitchboard
       - ${APP_DATA_DIR}/hooks/tailscale-supervisor.sh:/usr/local/bin/lnswitchboard-tailscale-supervisor:ro
     tmpfs:
       - /var/run/tailscale:size=16m,mode=0750,uid=1000,gid=1000
@@ -144,3 +242,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+networks:
+  cloudflare-egress:
+    driver: bridge

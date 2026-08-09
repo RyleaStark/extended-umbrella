@@ -1,6 +1,48 @@
 # Changelog
 
+## 0.4.0.rc22-umbrel.1 — 2026-08-09
+
+- Pin lnSwitchboard RC22 by immutable multi-architecture OCI index digest.
+- Split the administration and public listeners into separate least-privilege containers joined only by a hardened Unix socket.
+- Keep operational SQLite, LND macaroons, provider credentials, and connector state out of the Internet-facing public process.
+- Route Cloudflare Mesh and Tailscale Funnel only through the bounded public listener on port 21212.
+- Preserve the rollback-compatible historical database/key authority and transactional migration recovery.
+- Verify every privileged writable bind mount by descriptor identity against a read-only host view before initialization, and publish the App Proxy privacy override atomically.
+- Avoid rollback compatibility links for transient SQLite journal/WAL/SHM files and retire legacy links only when a validated schema-v2 marker and digest-matched archive bind that exact sidecar, so RC21 rollback/re-upgrade cannot strand a dangling journal path.
+- Recover bounded, root-owned App Proxy privacy-config publication temporaries after interruption while rejecting symlinks, hardlinks, malformed names, metadata, and content.
+
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
+
+## 0.4.0.rc21-umbrel.1 — 2026-08-09
+
+### Fixed
+
+- Pins the immutable multi-platform RC21 image built from merged source `8369b7305a9300ed10d23af7be96be4434718bf6` at OCI index `sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765` for both migration and application services.
+- Enforces byte-for-byte canonical OAuth callbacks before production listeners open, including WHATWG numeric-host, malformed IDNA, authority, port, path, delimiter, Unicode, and browser-normalization rejection.
+- Keeps webhook payloads, destinations, signing material, payer data, payment requests, preimages, remote bodies, raw exceptions, and payload-derived identity fields out of operator history while reconstructing stable retries from current authoritative invoice/address state.
+- Applies configured retention to terminal invoice and webhook history without deleting pending retry authority, and creates or repairs SQLite, macaroon, connection-key, and Nostr signer files with owner-only permissions.
+- Refreshes durable migration recovery authorities after rollback/re-upgrade so a completed marker cannot restore a stale credential generation.
+
+## 0.4.0.rc20-umbrel.1 — 2026-08-08
+
+### Fixed
+
+- Pins the immutable multi-platform RC20 image built from exact merged source `ef3e3354f0944844d12c48f10b2b2a88decb22fd`; RC20 replaces persisted webhook destinations with non-reversible references, strips signing headers, exception text, response bodies, and payloads from operator-visible history, and idempotently re-scrubs legacy rows after rollback/re-upgrade.
+- Makes OAuth privacy application-owned and cross-platform: query-bearing callbacks are restricted to exact portable IP-loopback URLs, remote callbacks require a clean HTTPS fragment-only page, the static receiver has no query fallback or network access, and production application access logs remain disabled. These guarantees do not depend on Umbrel App Proxy, Caddy, NGINX, or another host-specific proxy.
+- Keeps remote OAuth unavailable by default with the source placeholder callback until a real HTTPS fragment callback page and OAuth client are explicitly provisioned.
+- Enables the authoritative `UMBREL` deployment mode so authenticated App Proxy requests from remote clients reach the administration listener. A root-owned read-only proxy override keeps Umbrel's inherited proxy silent and the OAuth completion API authenticated as package-specific defense in depth, not as the portable security boundary.
+- Preserves rollback compatibility with interim RC15 packages through exact relative links to the canonical `data/secrets` state tree, so records remain live across upgrade, rollback, and re-upgrade.
+- Uses atomic no-overwrite state commits and a root-owned, fsynced transaction manifest that binds every canonical database, key, sidecar, and exact archive destination before destructive cleanup. Recovery rejects mixed credential generations, resumes every marker/commit/archive boundary, preserves rollback-created state, rejects hard links and untrusted reserved paths, and masks connector state from the privileged migrator.
+- Grants the Cloudflare Mesh sidecar the exact supplementary group needed to read its UID/GID 1000 token handoff without broadening application access to Mesh private state.
+
+## 0.4.0.rc15-umbrel.8 — 2026-08-08
+
+### Fixed
+
+- Restores the RC12 persistent state contract at `data/secrets:/app/secrets`, so existing lnSwitchboard databases and secret state remain visible after container replacement.
+- Keeps Tailscale control and status files under the same historical persistent secrets tree.
+- Adds a network-isolated, least-privilege state migrator for records written by interim `umbrel.2` through `umbrel.7` packages. Original files are archived after SQLite integrity verification; divergent historical and interim databases fail closed without changing either copy.
+- Adds an executable upgrade regression that seeds real RC12 records and verifies the exact RC15 image can still read them through the rendered package mount.
 
 ## 0.4.0.rc15-umbrel.7 — 2026-08-08
 
