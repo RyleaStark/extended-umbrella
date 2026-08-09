@@ -15,6 +15,7 @@ import shutil
 import sqlite3
 import stat
 import sys
+import tempfile
 from pathlib import Path
 from typing import NoReturn
 
@@ -114,14 +115,51 @@ def fsync_tree(path: Path) -> None:
 def verify_database(path: Path) -> None:
     if not path.exists():
         return
+    verify_directory = Path(tempfile.mkdtemp(prefix=".sqlite-verify-", dir=path.parent))
+    verify_path = verify_directory / path.name
+    for suffix in ("", "-wal", "-shm"):
+        source = Path(f"{path}{suffix}")
+        if source.exists():
+            shutil.copy2(source, Path(f"{verify_path}{suffix}"))
     result: tuple[str] | None = None
     try:
-        with sqlite3.connect(path) as database:
+        with sqlite3.connect(verify_path) as database:
             result = database.execute("PRAGMA integrity_check").fetchone()
     except sqlite3.Error as exc:
         fail(f"the staged database did not open cleanly ({type(exc).__name__})")
+    finally:
+        shutil.rmtree(verify_directory)
     if result is None or result[0] != "ok":
         fail("the staged database failed SQLite integrity_check")
+
+
+def database_row_count(path: Path, workspace: Path) -> int:
+    verify_directory = Path(tempfile.mkdtemp(prefix=".sqlite-count-", dir=workspace))
+    verify_path = verify_directory / path.name
+    for suffix in ("", "-wal", "-shm"):
+        source = Path(f"{path}{suffix}")
+        if source.exists():
+            shutil.copy2(source, Path(f"{verify_path}{suffix}"))
+    try:
+        with sqlite3.connect(verify_path) as database:
+            result = database.execute("PRAGMA integrity_check").fetchone()
+            if result is None or result[0] != "ok":
+                fail("a database candidate failed SQLite integrity_check")
+            tables = database.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            ).fetchall()
+            total = 0
+            for (name,) in tables:
+                quoted = str(name).replace('"', '""')
+                total += int(
+                    database.execute(f'SELECT COUNT(*) FROM "{quoted}"').fetchone()[0]
+                )
+            return total
+    except sqlite3.Error as exc:
+        fail(f"a database candidate did not open cleanly ({type(exc).__name__})")
+    finally:
+        shutil.rmtree(verify_directory)
 
 
 def remove_owned_stage() -> None:
@@ -130,6 +168,21 @@ def remove_owned_stage() -> None:
     if STAGE.is_symlink() or not STAGE.is_dir():
         fail("the reserved migration staging path has an unexpected type")
     shutil.rmtree(STAGE)
+
+
+def validate_reserved_paths() -> None:
+    for path, label in ((STAGE, "staging"), (BACKUP, "backup")):
+        if path.is_symlink():
+            fail(f"the reserved {label} path has an unexpected type")
+        if path.exists():
+            if not path.is_dir():
+                fail(f"the reserved {label} path has an unexpected type")
+            validate_tree(path)
+    for path, label in ((MARKER, "marker"), (MARKER_TEMP, "temporary marker")):
+        if path.is_symlink():
+            fail(f"the reserved {label} path has an unexpected type")
+        if path.exists() and not path.is_file():
+            fail(f"the reserved {label} path has an unexpected type")
 
 
 def archive_source(source: Path) -> None:
@@ -151,17 +204,23 @@ def archive_source(source: Path) -> None:
 
 def write_marker(migrated: list[str]) -> None:
     payload = {"schema": 1, "migrated_entries": sorted(migrated)}
-    with MARKER_TEMP.open("w", encoding="utf-8") as handle:
+    if MARKER_TEMP.exists():
+        MARKER_TEMP.unlink()
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(MARKER_TEMP, flags, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, separators=(",", ":"), sort_keys=True)
         handle.write("\n")
         handle.flush()
         os.fsync(handle.fileno())
-    os.chmod(MARKER_TEMP, 0o600)
     os.replace(MARKER_TEMP, MARKER)
 
 
 def main() -> None:
     ROOT.mkdir(mode=0o750, parents=True, exist_ok=True)
+    validate_reserved_paths()
     sources = sorted(
         (item for item in ROOT.iterdir() if item.name not in EXCLUDED),
         key=lambda item: item.name,
@@ -182,22 +241,41 @@ def main() -> None:
     CANONICAL.mkdir(mode=0o750, exist_ok=True)
     validate_tree(CANONICAL)
 
+    remove_owned_stage()
+    STAGE.mkdir(mode=0o700)
+    archive_only: set[str] = set()
+    interim_database = ROOT / "lnswitchboard.db"
+    historical_database = CANONICAL / "lnswitchboard.db"
+    if (
+        interim_database.exists()
+        and historical_database.exists()
+        and not files_equal(interim_database, historical_database)
+    ):
+        interim_rows = database_row_count(interim_database, STAGE)
+        database_row_count(historical_database, STAGE)
+        if interim_rows == 0:
+            # The broken package initialized a new empty state tree beside the
+            # historical database. Preserve history and archive the empty tree.
+            archive_only.update(source.name for source in sources)
+
     conflicts = [
         source.name
         for source in sources
+        if source.name not in archive_only
         if (CANONICAL / source.name).exists()
         and not files_equal(source, CANONICAL / source.name)
     ]
     if conflicts:
+        remove_owned_stage()
         fail(
             "both historical and interim state exist with different contents; "
             "neither copy was changed"
         )
 
-    remove_owned_stage()
-    STAGE.mkdir(mode=0o700)
     to_commit: list[Path] = []
     for source in sources:
+        if source.name in archive_only:
+            continue
         destination = CANONICAL / source.name
         if destination.exists():
             continue
@@ -210,13 +288,12 @@ def main() -> None:
         to_commit.append(source)
 
     verify_database(STAGE / "lnswitchboard.db")
-    # SQLite may checkpoint staged WAL bytes; restore ownership afterward.
-    if (STAGE / "lnswitchboard.db").exists():
-        preserve_ownership(ROOT / "lnswitchboard.db", STAGE / "lnswitchboard.db")
     fsync_tree(STAGE)
 
     # Re-check all destinations immediately before the first commit mutation.
     for source in sources:
+        if source.name in archive_only:
+            continue
         destination = CANONICAL / source.name
         if destination.exists() and not files_equal(source, destination):
             fail("canonical state changed during migration; no source state was removed")

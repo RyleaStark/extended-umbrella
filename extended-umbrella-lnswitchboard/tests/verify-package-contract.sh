@@ -81,10 +81,14 @@ done
 
 bash -n "$PACKAGE_DIR/hooks/mesh-entrypoint.sh"
 bash -n "$PACKAGE_DIR/hooks/tailscale-supervisor.sh"
-bash -n "$PACKAGE_DIR/tests/verify-rc12-upgrade-preservation.sh"
-bash -n "$PACKAGE_DIR/tests/verify-interim-layout-migration.sh"
-bash -n "$PACKAGE_DIR/tests/verify-state-conflict-fails-closed.sh"
+bash -n "$PACKAGE_DIR/tests/verify-empty-interim-prefers-history.sh"
 bash -n "$PACKAGE_DIR/tests/verify-fresh-install.sh"
+bash -n "$PACKAGE_DIR/tests/verify-interim-layout-migration.sh"
+bash -n "$PACKAGE_DIR/tests/verify-partial-migration-recovery.sh"
+bash -n "$PACKAGE_DIR/tests/verify-reserved-paths-fail-closed.sh"
+bash -n "$PACKAGE_DIR/tests/verify-state-conflict-fails-closed.sh"
+bash -n "$PACKAGE_DIR/tests/verify-wal-migration.sh"
+bash -n "$PACKAGE_DIR/tests/verify-rc12-upgrade-preservation.sh"
 python3 - "$PACKAGE_DIR/hooks/state-migrate.py" <<'PY'
 import ast, pathlib, sys
 ast.parse(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
