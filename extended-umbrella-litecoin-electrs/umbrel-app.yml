@@ -1,0 +1,29 @@
+manifestVersion: 1
+id: extended-umbrella-litecoin-electrs
+category: bitcoin
+name: "Electrs (LTC)"
+version: "0.9.12-umbrel.3"
+tagline: "A private Litecoin Electrum server powered by Electrs"
+description: >-
+  Run a personal Electrum server for Litecoin using an actual Litecoin-compatible
+  Electrs runtime. Electrs (LTC) indexes your own Litecoin Core node and exposes
+  independent local-network and Tor endpoints for compatible wallets and apps.
+developer: Roman Zeyde, losh11, and RyleaStark
+website: https://github.com/RyleaStark/umbrel-electrs-ltc
+dependencies:
+  - extended-umbrella-litecoin-core
+repo: https://github.com/RyleaStark/umbrel-electrs-ltc
+support: https://github.com/RyleaStark/umbrel-electrs-ltc/issues
+port: 2111
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrs/gallery/icon.png
+gallery:
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrs/gallery/1.png
+path: ""
+defaultPassword: ""
+releaseNotes: >-
+  Initial staging release. Adds a dedicated Litecoin-compatible Electrs runtime,
+  separate storage and network identity, a Tor endpoint, and Litecoin-specific GUI branding.
+backupIgnore:
+  - data/electrs
+submitter: "Rylea Stark"
+submission: https://github.com/RyleaStark/extended-umbrella

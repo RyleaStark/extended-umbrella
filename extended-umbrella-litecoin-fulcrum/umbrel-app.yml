@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-fulcrum
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.3"
+version: "2.1.1-umbrel.4"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -13,12 +13,14 @@ dependencies:
 repo: https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui
 support: https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui/issues
 port: 2109
-icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/icon.svg
-gallery: []
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/icon.png
+gallery:
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/1.png
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Adds writable Fulcrum data and log initialization, Tor hidden-service support, and persistent Fulcrum log capture for the management UI.
+  Rebuilds the management interface from the official Fulcrum GUI rather than the Electrs GUI,
+  applies the approved Fulcrum-specific Litecoin identity, and fixes the GUI-to-Fulcrum runtime contract.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"

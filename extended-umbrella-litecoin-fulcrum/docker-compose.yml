@@ -4,14 +4,15 @@ services:
       APP_HOST: extended-umbrella-litecoin-fulcrum_app_1
       APP_PORT: 3006
   app:
-    image: ghcr.io/ryleastark/umbrel-litecoin-fulcrum-gui:v0.1.1@sha256:4019742280b3e2b941735830236af9492c14a6136bf9ce029b4f7f0b30b719d7
+    image: ghcr.io/ryleastark/umbrel-litecoin-fulcrum-gui:v0.2.0@sha256:ce82f07674b7edf17a6ccee69499d30917e2ce124f2f44581c7577f12a78ab00
     depends_on: [fulcrum]
     restart: on-failure
     environment:
       ELECTRUM_HIDDEN_SERVICE: "${APP_LITECOIN_FULCRUM_RPC_HIDDEN_SERVICE}"
       ELECTRUM_LOCAL_SERVICE: "${DEVICE_DOMAIN_NAME}"
-      ELECTRUM_HOST: "${APP_LITECOIN_FULCRUM_NODE_IP}"
-      ELECTRUM_PUBLIC_CONNECTION_PORT: "${APP_LITECOIN_FULCRUM_NODE_PORT}"
+      FULCRUM_HOST: "${APP_LITECOIN_FULCRUM_NODE_IP}"
+      FULCRUM_PORT: "${APP_LITECOIN_FULCRUM_NODE_PORT}"
+      ELECTRUM_PORT: "${APP_LITECOIN_FULCRUM_NODE_PORT}"
       LITECOIN_HOST: "${APP_LITECOIN_NODE_IP}"
       RPC_USER: "${APP_LITECOIN_RPC_USER}"
       RPC_PASSWORD: "${APP_LITECOIN_RPC_PASS}"
