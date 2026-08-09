@@ -31,39 +31,39 @@ migrate() {
 }
 
 docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" \
-  sh -c "printf 'LOG_LEVEL=silent\\nPROXY_AUTH_WHITELIST=\\n' > /proxy/app-proxy.env.tmp.123; printf 'LOG_LEVEL=silent\\n' > /proxy/app-proxy.env.tmp; chown 0:0 /proxy/app-proxy.env.tmp.123 /proxy/app-proxy.env.tmp; chmod 0444 /proxy/app-proxy.env.tmp.123; chmod 0600 /proxy/app-proxy.env.tmp"
+  sh -c "printf 'LOG_LEVEL=silent\\nPROXY_AUTH_WHITELIST=\\n' > /proxy/.app-proxy.env.tmp.123; printf 'LOG_LEVEL=silent\\n' > /proxy/app-proxy.env.tmp; chown 0:0 /proxy/.app-proxy.env.tmp.123 /proxy/app-proxy.env.tmp; chmod 0444 /proxy/.app-proxy.env.tmp.123; chmod 0600 /proxy/app-proxy.env.tmp"
 migrate >/dev/null
-test ! -e "$ROOT/proxy-config/app-proxy.env.tmp.123"
+test ! -e "$ROOT/proxy-config/.app-proxy.env.tmp.123"
 test ! -e "$ROOT/proxy-config/app-proxy.env.tmp"
 printf 'GREEN proxy_publication_recovery_removes_owned_complete_and_partial_temporaries\n'
 
 printf 'outside-sentinel\n' > "$FIXTURE/outside"
 outside_before=$(sha256sum "$FIXTURE/outside" | cut -d' ' -f1)
 docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" \
-  ln -s "$FIXTURE/outside" /proxy/app-proxy.env.tmp.124
+  ln -s "$FIXTURE/outside" /proxy/.app-proxy.env.tmp.124
 status=0
 output=$(migrate 2>&1) || status=$?
 [ "$status" = 65 ]
 grep -q 'App Proxy publication temporary has unsafe metadata' <<<"$output"
 outside_after=$(sha256sum "$FIXTURE/outside" | cut -d' ' -f1)
 [ "$outside_before" = "$outside_after" ]
-docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" rm /proxy/app-proxy.env.tmp.124
+docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" rm /proxy/.app-proxy.env.tmp.124
 printf 'GREEN proxy_publication_recovery_rejects_symlink_without_outside_mutation\n'
 
 docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" \
-  sh -c "printf 'untrusted-content\\n' > /proxy/app-proxy.env.tmp.125; chown 0:0 /proxy/app-proxy.env.tmp.125; chmod 0444 /proxy/app-proxy.env.tmp.125"
-bad_before=$(sha256sum "$ROOT/proxy-config/app-proxy.env.tmp.125" | cut -d' ' -f1)
+  sh -c "printf 'untrusted-content\\n' > /proxy/.app-proxy.env.tmp.125; chown 0:0 /proxy/.app-proxy.env.tmp.125; chmod 0444 /proxy/.app-proxy.env.tmp.125"
+bad_before=$(sha256sum "$ROOT/proxy-config/.app-proxy.env.tmp.125" | cut -d' ' -f1)
 status=0
 output=$(migrate 2>&1) || status=$?
 [ "$status" = 65 ]
 grep -q 'App Proxy publication temporary has unexpected content' <<<"$output"
-bad_after=$(sha256sum "$ROOT/proxy-config/app-proxy.env.tmp.125" | cut -d' ' -f1)
+bad_after=$(sha256sum "$ROOT/proxy-config/.app-proxy.env.tmp.125" | cut -d' ' -f1)
 [ "$bad_before" = "$bad_after" ]
-docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" rm /proxy/app-proxy.env.tmp.125
+docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" rm /proxy/.app-proxy.env.tmp.125
 printf 'GREEN proxy_publication_recovery_rejects_untrusted_content_without_mutation\n'
 
 docker run --rm -v "$ROOT/proxy-config:/proxy" "$ALPINE" \
-  sh -c "printf 'LOG_LEVEL=silent\\n' > /proxy/app-proxy.env.tmp.126; chown 0:0 /proxy/app-proxy.env.tmp.126; chmod 0444 /proxy/app-proxy.env.tmp.126; ln /proxy/app-proxy.env.tmp.126 /proxy/app-proxy.env.tmp.alias"
+  sh -c "printf 'LOG_LEVEL=silent\\n' > /proxy/.app-proxy.env.tmp.126; chown 0:0 /proxy/.app-proxy.env.tmp.126; chmod 0444 /proxy/.app-proxy.env.tmp.126; ln /proxy/.app-proxy.env.tmp.126 /proxy/app-proxy.env.tmp.alias"
 status=0
 output=$(migrate 2>&1) || status=$?
 [ "$status" = 65 ]
