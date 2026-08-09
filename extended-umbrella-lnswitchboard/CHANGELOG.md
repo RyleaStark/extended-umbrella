@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.7 — 2026-08-08
+
+### Fixed
+
+- Uses Umbrel's transitive Bitcoin dependency export `APP_BITCOIN_NETWORK` when locating the invoice and readonly macaroons. Fresh installs and ordinary Umbrel updates no longer depend on an undeclared `BITCOIN_NETWORK` shell variable.
+
 ## 0.4.0.rc15-umbrel.6 — 2026-08-08
 
 ### Security

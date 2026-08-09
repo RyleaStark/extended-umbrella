@@ -61,8 +61,8 @@ services:
       TAILSCALE_STATUS_DIR: "/app/secrets/tailscale/status"
     volumes:
       - ${APP_LIGHTNING_NODE_DATA_DIR}/tls.cert:/lnd/tls.cert:ro
-      - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${BITCOIN_NETWORK}/invoice.macaroon:/lnd/invoice.macaroon:ro
-      - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${BITCOIN_NETWORK}/readonly.macaroon:/lnd/readonly.macaroon:ro
+      - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/invoice.macaroon:/lnd/invoice.macaroon:ro
+      - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/readonly.macaroon:/lnd/readonly.macaroon:ro
       - ${APP_DATA_DIR}/data:/app/secrets
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app/cloudflare-mesh
     networks:
