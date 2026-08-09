@@ -69,3 +69,10 @@ output=$(migrate 2>&1) || status=$?
 [ "$status" = 65 ]
 grep -q 'App Proxy publication temporary has unsafe metadata' <<<"$output"
 printf 'GREEN proxy_publication_recovery_rejects_hardlinked_temporary\n'
+
+docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
+  --cap-add DAC_OVERRIDE --security-opt no-new-privileges:true \
+  --tmpfs /tmp:size=16m,mode=0700 -v "$FIXTURE:/fixture" \
+  -v "$PACKAGE_DIR/hooks/state-migrate.py:/opt/state-migrate.py:ro" \
+  -v "$PACKAGE_DIR/tests/probes/proxy-retirement-race.py:/opt/probe.py:ro" \
+  --entrypoint python "$APP_IMAGE" /opt/probe.py

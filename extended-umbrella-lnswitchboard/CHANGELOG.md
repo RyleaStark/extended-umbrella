@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0.rc22-umbrel.3 — 2026-08-09
+
+- Retire validated App Proxy publication temporaries through a root-private crash-recovery directory while holding the opened inode across the atomic move.
+- Restore and preserve a substituted pathname entry rather than deleting it, and unlink only after verifying the moved object against the held descriptor inside the private directory.
+- Recover interruption after the retirement move and add deterministic final-replacement and retirement-recovery regressions.
+
 ## 0.4.0.rc22-umbrel.2 — 2026-08-09
 
 - Recover the exact dot-prefixed App Proxy publication temporary emitted when the guarded writer is interrupted after file fsync and before atomic replacement.
