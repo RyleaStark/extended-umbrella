@@ -14,6 +14,7 @@ export CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK=''
 export CLOUDFLARE_OAUTH_REDIRECT_PAGE=''
 mkdir -p "$APP_DATA_DIR/data/secrets" "$APP_DATA_DIR/data/.lnswitchboard-state-stage-v1" "$APP_DATA_DIR/hooks" "$APP_LIGHTNING_NODE_DATA_DIR/data/chain/bitcoin/mainnet"
 chmod 0777 "$APP_DATA_DIR/data" "$APP_DATA_DIR/data/secrets"
+chmod 0700 "$APP_DATA_DIR/data/.lnswitchboard-state-stage-v1"
 cp -a "$PACKAGE_DIR/hooks/." "$APP_DATA_DIR/hooks/"
 printf 'fixture certificate\n' > "$APP_LIGHTNING_NODE_DATA_DIR/tls.cert"
 printf '00\n' > "$APP_LIGHTNING_NODE_DATA_DIR/data/chain/bitcoin/mainnet/invoice.macaroon"

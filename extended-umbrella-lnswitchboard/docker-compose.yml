@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -58,7 +58,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure

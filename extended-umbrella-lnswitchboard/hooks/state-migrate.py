@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import ctypes
 import errno
+import fcntl
 import json
 import os
 import shutil
@@ -18,6 +19,8 @@ import sqlite3
 import stat
 import sys
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import NoReturn
 
@@ -27,6 +30,7 @@ STAGE = ROOT / ".lnswitchboard-state-stage-v1"
 BACKUP = ROOT / ".lnswitchboard-state-backup-v1"
 MARKER = ROOT / ".lnswitchboard-state-migration-v1.json"
 MARKER_TEMP = ROOT / ".lnswitchboard-state-migration-v1.tmp"
+LOCK = ROOT / ".lnswitchboard-state-lock-v1.json"
 EXCLUDED = {
     "secrets",
     "connectors",
@@ -34,6 +38,7 @@ EXCLUDED = {
     BACKUP.name,
     MARKER.name,
     MARKER_TEMP.name,
+    LOCK.name,
 }
 AT_FDCWD = -100
 RENAME_NOREPLACE = 1
@@ -42,6 +47,88 @@ RENAME_NOREPLACE = 1
 def fail(message: str) -> NoReturn:
     print(f"lnSwitchboard state migration refused: {message}", file=sys.stderr)
     raise SystemExit(65)
+
+
+@contextmanager
+def protected_root() -> Iterator[None]:
+    """Temporarily prevent the historical app UID from racing migration paths."""
+    root_fd = os.open(ROOT, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    lock_fd = -1
+    original: dict[str, int] | None = None
+    root_locked = False
+    try:
+        fcntl.flock(root_fd, fcntl.LOCK_EX)
+        root_stat = os.fstat(root_fd)
+        try:
+            lock_fd = os.open(
+                LOCK.name,
+                os.O_RDWR | os.O_NOFOLLOW,
+                dir_fd=root_fd,
+            )
+            lock_stat = os.fstat(lock_fd)
+            if (
+                not stat.S_ISREG(lock_stat.st_mode)
+                or lock_stat.st_uid != 0
+                or lock_stat.st_gid != 0
+                or stat.S_IMODE(lock_stat.st_mode) != 0o600
+                or lock_stat.st_nlink != 1
+            ):
+                fail("the migration lock metadata is not trusted")
+            payload = os.read(lock_fd, 4096)
+            try:
+                parsed = json.loads(payload.decode("utf-8"))
+                original = {
+                    "uid": int(parsed["uid"]),
+                    "gid": int(parsed["gid"]),
+                    "mode": int(parsed["mode"]),
+                }
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError, UnicodeDecodeError):
+                fail("the migration lock metadata is invalid")
+        except FileNotFoundError:
+            original = {
+                "uid": int(root_stat.st_uid),
+                "gid": int(root_stat.st_gid),
+                "mode": int(stat.S_IMODE(root_stat.st_mode)),
+            }
+            lock_fd = os.open(
+                LOCK.name,
+                os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                0o600,
+                dir_fd=root_fd,
+            )
+            payload = (json.dumps(original, sort_keys=True) + "\n").encode("utf-8")
+            os.write(lock_fd, payload)
+            os.fsync(lock_fd)
+            os.fsync(root_fd)
+
+        assert original is not None
+        if original["uid"] < 0 or original["gid"] < 0 or not 0 <= original["mode"] <= 0o7777:
+            fail("the migration lock metadata is outside allowed ranges")
+
+        lock_stat = os.fstat(lock_fd)
+        os.fchown(root_fd, 0, 0)
+        os.fchmod(root_fd, 0o700)
+        os.fsync(root_fd)
+        root_locked = True
+        path_stat = os.stat(LOCK.name, dir_fd=root_fd, follow_symlinks=False)
+        if (path_stat.st_dev, path_stat.st_ino) != (lock_stat.st_dev, lock_stat.st_ino):
+            fail("the migration lock path changed during acquisition")
+        yield
+    finally:
+        if root_locked and original is not None:
+            path_stat = os.stat(LOCK.name, dir_fd=root_fd, follow_symlinks=False)
+            lock_stat = os.fstat(lock_fd)
+            if (path_stat.st_dev, path_stat.st_ino) != (lock_stat.st_dev, lock_stat.st_ino):
+                fail("the migration lock path changed while protected")
+            os.fchown(root_fd, original["uid"], original["gid"])
+            os.fchmod(root_fd, original["mode"])
+            os.fsync(root_fd)
+            os.unlink(LOCK.name, dir_fd=root_fd)
+            os.fsync(root_fd)
+        if lock_fd >= 0:
+            os.close(lock_fd)
+        fcntl.flock(root_fd, fcntl.LOCK_UN)
+        os.close(root_fd)
 
 
 def rename_noreplace(source: Path, destination: Path) -> None:
@@ -79,12 +166,16 @@ def validate_tree(path: Path) -> None:
     pending = [path]
     while pending:
         current = pending.pop()
-        mode = current.lstat().st_mode
+        current_stat = current.lstat()
+        mode = current_stat.st_mode
         if stat.S_ISLNK(mode):
             fail(f"symbolic links are not allowed in state ({current.name})")
         if stat.S_ISDIR(mode):
             pending.extend(current.iterdir())
-        elif not stat.S_ISREG(mode):
+        elif stat.S_ISREG(mode):
+            if current_stat.st_nlink != 1:
+                fail(f"hard-linked state entry is not safe to migrate: {current.name}")
+        else:
             fail(f"special files are not allowed in state ({current.name})")
 
 
@@ -131,6 +222,19 @@ def normalize_app_ownership(path: Path) -> None:
     if path.is_dir():
         for child in path.iterdir():
             normalize_app_ownership(child)
+
+
+def tree_is_subset(subset: Path, superset: Path) -> bool:
+    if subset.is_dir() != superset.is_dir():
+        return False
+    if subset.is_file():
+        return files_equal(subset, superset)
+    subset_entries = {entry.name: entry for entry in subset.iterdir()}
+    superset_entries = {entry.name: entry for entry in superset.iterdir()}
+    return set(subset_entries).issubset(superset_entries) and all(
+        tree_is_subset(entry, superset_entries[name])
+        for name, entry in subset_entries.items()
+    )
 
 
 def fsync_tree(path: Path) -> None:
@@ -200,10 +304,16 @@ def database_row_count(path: Path, workspace: Path) -> int:
 def remove_owned_stage() -> None:
     if not STAGE.exists():
         return
-    if STAGE.is_symlink() or not STAGE.is_dir():
-        fail("the reserved migration staging path has an unexpected type")
+    stage_stat = STAGE.lstat()
+    if (
+        not stat.S_ISDIR(stage_stat.st_mode)
+        or stage_stat.st_uid != 0
+        or stage_stat.st_gid != 0
+        or stat.S_IMODE(stage_stat.st_mode) != 0o700
+    ):
+        fail("refusing to remove an untrusted migration staging path")
+    validate_tree(STAGE)
     shutil.rmtree(STAGE)
-
 
 def is_trusted_partial_migration(
     sources: dict[str, Path], canonical: dict[str, Path]
@@ -235,14 +345,29 @@ def validate_reserved_paths() -> None:
         if path.is_symlink():
             fail(f"the reserved {label} path has an unexpected type")
         if path.exists():
-            if not path.is_dir():
+            path_stat = path.lstat()
+            if not stat.S_ISDIR(path_stat.st_mode):
                 fail(f"the reserved {label} path has an unexpected type")
+            if path_stat.st_uid != 0 or path_stat.st_gid != 0:
+                fail(f"the reserved {label} path must be owned by root")
+            if stat.S_IMODE(path_stat.st_mode) != 0o700:
+                fail(f"the reserved {label} path has unsafe permissions")
             validate_tree(path)
-    for path, label in ((MARKER, "marker"), (MARKER_TEMP, "temporary marker")):
+    for path, label in (
+        (MARKER, "marker"),
+        (MARKER_TEMP, "temporary marker"),
+        (LOCK, "lock metadata"),
+    ):
         if path.is_symlink():
             fail(f"the reserved {label} path has an unexpected type")
-        if path.exists() and not path.is_file():
-            fail(f"the reserved {label} path has an unexpected type")
+        if path.exists():
+            path_stat = path.lstat()
+            if not stat.S_ISREG(path_stat.st_mode):
+                fail(f"the reserved {label} path has an unexpected type")
+            if path_stat.st_uid != 0 or path_stat.st_gid != 0:
+                fail(f"the reserved {label} path must be owned by root")
+            if stat.S_IMODE(path_stat.st_mode) != 0o600 or path_stat.st_nlink != 1:
+                fail(f"the reserved {label} path has unsafe permissions")
 
 
 def is_compatibility_link(path: Path) -> bool:
@@ -273,8 +398,27 @@ def ensure_compatibility_links() -> None:
         os.close(descriptor)
 
 
-def archive_source(source: Path) -> None:
-    BACKUP.mkdir(mode=0o700, exist_ok=True)
+def ensure_backup_directory(*, create: bool) -> bool:
+    validate_reserved_paths()
+    if BACKUP.is_symlink():
+        fail("the reserved backup path changed during migration")
+    if not BACKUP.exists():
+        if not create:
+            return False
+        BACKUP.mkdir(mode=0o700)
+    backup_stat = BACKUP.lstat()
+    if (
+        not stat.S_ISDIR(backup_stat.st_mode)
+        or backup_stat.st_uid != 0
+        or backup_stat.st_gid != 0
+        or stat.S_IMODE(backup_stat.st_mode) != 0o700
+    ):
+        fail("the reserved backup path is not trusted")
+    return True
+
+
+def archive_source(source: Path, *, allow_subset_cleanup: bool = False) -> None:
+    ensure_backup_directory(create=True)
     suffix = 1
     while True:
         name = source.name if suffix == 1 else f"{source.name}.{suffix}"
@@ -283,13 +427,130 @@ def archive_source(source: Path) -> None:
             rename_noreplace(source, destination)
             return
         except FileExistsError:
-            if files_equal(source, destination):
+            if files_equal(source, destination) or (
+                allow_subset_cleanup
+                and source.is_dir()
+                and destination.is_dir()
+                and tree_is_subset(source, destination)
+            ):
                 if source.is_dir():
                     shutil.rmtree(source)
                 else:
                     source.unlink()
                 return
             suffix += 1
+
+
+def read_marker() -> list[str] | None:
+    if not MARKER.exists():
+        return None
+    try:
+        payload = json.loads(MARKER.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        fail("the migration marker is invalid")
+    if payload.get("schema") != 1 or not isinstance(payload.get("migrated_entries"), list):
+        fail("the migration marker has an unsupported schema")
+    names: list[str] = []
+    for value in payload["migrated_entries"]:
+        name = str(value)
+        if not name or name in EXCLUDED or Path(name).name != name:
+            fail("the migration marker contains an unsafe state name")
+        names.append(name)
+    if len(names) != len(set(names)):
+        fail("the migration marker contains duplicate state names")
+    return sorted(names)
+
+
+def backup_candidate(name: str) -> Path | None:
+    if not ensure_backup_directory(create=False):
+        return None
+    candidates: list[tuple[int, Path]] = []
+    for candidate in BACKUP.iterdir():
+        if candidate.name == name:
+            candidates.append((1, candidate))
+            continue
+        prefix = f"{name}."
+        if candidate.name.startswith(prefix):
+            suffix = candidate.name[len(prefix) :]
+            if suffix.isdigit() and int(suffix) >= 2:
+                candidates.append((int(suffix), candidate))
+    if not candidates:
+        return None
+    selected = max(candidates, key=lambda item: item[0])[1]
+    validate_tree(selected)
+    return selected
+
+
+def recover_archived_transaction(marker_names: list[str]) -> bool:
+    canonical_entries: dict[str, Path] = {}
+    if CANONICAL.exists():
+        if CANONICAL.is_symlink() or not CANONICAL.is_dir():
+            fail("the canonical secrets path has an unexpected type")
+        validate_tree(CANONICAL)
+        canonical_entries = {entry.name: entry for entry in CANONICAL.iterdir()}
+    if set(marker_names).issubset(canonical_entries) and (
+        not STAGE.exists() or not any(STAGE.iterdir())
+    ):
+        return False
+
+    selected: dict[str, Path] = {}
+    for name in marker_names:
+        candidate = backup_candidate(name)
+        if candidate is None:
+            fail("migration metadata exists but archived state is incomplete")
+        selected[name] = candidate
+    if not selected:
+        fail("migration metadata exists without recoverable archived state")
+
+    for name in set(marker_names) & canonical_entries.keys():
+        if not files_equal(canonical_entries[name], selected[name]):
+            fail("canonical state diverged during archived transaction recovery")
+
+    if STAGE.exists():
+        staged_entries = {entry.name: entry for entry in STAGE.iterdir()}
+        for name, staged in list(staged_entries.items()):
+            if name not in selected or name in canonical_entries:
+                fail("staged archived recovery state is not coherent")
+            if not files_equal(staged, selected[name]):
+                if staged.is_dir():
+                    shutil.rmtree(staged)
+                else:
+                    staged.unlink()
+                staged_entries.pop(name)
+    else:
+        STAGE.mkdir(mode=0o700)
+        staged_entries = {}
+
+    for name, source in selected.items():
+        if name in canonical_entries or name in staged_entries:
+            continue
+        staged = STAGE / name
+        if source.is_dir():
+            shutil.copytree(source, staged)
+        else:
+            shutil.copy2(source, staged)
+        preserve_ownership(source, staged)
+        staged_entries[name] = staged
+    verify_database(STAGE / "lnswitchboard.db")
+    fsync_tree(STAGE)
+
+    if not CANONICAL.exists():
+        CANONICAL.mkdir(mode=0o750)
+    for name in marker_names:
+        destination = CANONICAL / name
+        if destination.exists():
+            continue
+        rename_noreplace(STAGE / name, destination)
+    normalize_app_ownership(CANONICAL)
+    fsync_tree(CANONICAL)
+    remove_owned_stage()
+    ensure_compatibility_links()
+    write_marker(marker_names)
+    print(
+        "lnSwitchboard state migration: recovered "
+        f"{len(marker_names)} archived state entries"
+    )
+    return True
 
 
 def write_marker(migrated: list[str]) -> None:
@@ -308,9 +569,9 @@ def write_marker(migrated: list[str]) -> None:
     os.replace(MARKER_TEMP, MARKER)
 
 
-def main() -> None:
-    ROOT.mkdir(mode=0o750, parents=True, exist_ok=True)
+def _main_locked() -> None:
     validate_reserved_paths()
+    marker_names = read_marker()
     sources: list[Path] = []
     for item in sorted(ROOT.iterdir(), key=lambda candidate: candidate.name):
         if item.name in EXCLUDED:
@@ -321,6 +582,8 @@ def main() -> None:
             continue
         sources.append(item)
     if not sources:
+        if marker_names is not None and recover_archived_transaction(marker_names):
+            return
         if CANONICAL.exists():
             if CANONICAL.is_symlink() or not CANONICAL.is_dir():
                 fail("the canonical secrets path has an unexpected type")
@@ -329,6 +592,8 @@ def main() -> None:
             normalize_app_ownership(CANONICAL)
             remove_owned_stage()
             ensure_compatibility_links()
+            if marker_names is not None:
+                write_marker([entry.name for entry in CANONICAL.iterdir()])
         elif STAGE.exists():
             fail("staged state exists without canonical or source state")
         if MARKER_TEMP.exists():
@@ -354,6 +619,7 @@ def main() -> None:
     remove_owned_stage()
     STAGE.mkdir(mode=0o700)
     archive_only: set[str] = set()
+    subset_archive_cleanup: set[str] = set()
     interim_database = ROOT / "lnswitchboard.db"
     historical_database = CANONICAL / "lnswitchboard.db"
     if (
@@ -367,10 +633,10 @@ def main() -> None:
             # The broken package initialized a new empty state tree beside the
             # historical database. Preserve history and archive the empty tree.
             archive_only.update(source.name for source in sources)
-    archived_interim_database = BACKUP / "lnswitchboard.db"
+    archived_interim_database = backup_candidate("lnswitchboard.db")
     if (
         not interim_database.exists()
-        and archived_interim_database.exists()
+        and archived_interim_database is not None
         and historical_database.exists()
         and not files_equal(archived_interim_database, historical_database)
         and database_row_count(archived_interim_database, STAGE) == 0
@@ -392,11 +658,49 @@ def main() -> None:
             files_equal(source_entries[name], canonical_entries[name])
             for name in source_entries
         )
-        if bundles_match or sources_are_identical_subset:
+        rollback_extension = (
+            marker_names is not None
+            and set(marker_names).issubset(canonical_entries)
+            and all(
+                name not in canonical_entries
+                or files_equal(source_entries[name], canonical_entries[name])
+                for name in source_entries
+            )
+        )
+        torn_archive_cleanup = (
+            set(source_entries).issubset(canonical_entries)
+            and any(
+                not files_equal(source_entries[name], canonical_entries[name])
+                for name in source_entries
+            )
+            and all(
+                tree_is_subset(source_entries[name], canonical_entries[name])
+                for name in source_entries
+            )
+            and all(
+                files_equal(candidate, canonical_entries[name])
+                if (candidate := backup_candidate(name)) is not None
+                else False
+                for name in source_entries
+                if not files_equal(source_entries[name], canonical_entries[name])
+            )
+        )
+        if bundles_match or sources_are_identical_subset or torn_archive_cleanup:
             # An identical strict subset is the durable shape left if power is
             # lost after some source entries were archived but before rollback
             # compatibility links were created.
             archive_only.update(source_entries)
+            if torn_archive_cleanup:
+                subset_archive_cleanup.update(
+                    name
+                    for name in source_entries
+                    if not files_equal(source_entries[name], canonical_entries[name])
+                )
+        elif rollback_extension:
+            # A completed prior migration proves the root-layout application was
+            # a rollback. Preserve newly created root entries alongside the
+            # canonical bundle while still refusing divergent replacements.
+            pass
         elif not partial_recovery:
             remove_owned_stage()
             fail(
@@ -459,13 +763,24 @@ def main() -> None:
     normalize_app_ownership(CANONICAL)
     fsync_tree(CANONICAL)
 
-    migrated_names = [source.name for source in sources]
+    migrated_names = sorted(set(marker_names or []) | {source.name for source in sources})
     for source in sources:
-        archive_source(source)
+        archive_source(
+            source,
+            allow_subset_cleanup=source.name in subset_archive_cleanup,
+        )
     ensure_compatibility_links()
     remove_owned_stage()
     write_marker(migrated_names)
     print(f"lnSwitchboard state migration: preserved {len(migrated_names)} state entries")
+
+
+def main() -> None:
+    if ROOT.is_symlink():
+        fail("the app-data root cannot be a symbolic link")
+    ROOT.mkdir(mode=0o750, parents=True, exist_ok=True)
+    with protected_root():
+        _main_locked()
 
 
 if __name__ == "__main__":

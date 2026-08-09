@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-conflict-${RANDOM}-$$"
 export APP_ID="$PROJECT"

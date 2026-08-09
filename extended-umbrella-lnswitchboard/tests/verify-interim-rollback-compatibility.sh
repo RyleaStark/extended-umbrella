@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-rollback-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -63,12 +63,16 @@ docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 from pathlib import Path
+from backend.app.connection_secret_store import ConnectionSecretStore
 from backend.app.ln_address_store import LNAddressStore
 async def main():
     store=LNAddressStore(Path('/app/secrets/lnswitchboard.db'))
     rows=await store.list_addresses()
     assert {row['local_part'] for row in rows} == {'before-upgrade'}
     await store.add_address(local_part='during-rollback', domain='migration.invalid', min_sendable_sat=None, max_sendable_sat=None, metadata_description='rollback', success_message=None, webhook_urls=[])
+    secrets=ConnectionSecretStore(Path('/app/secrets/lnswitchboard.db'), Path('/app/secrets/connection-secrets.key'))
+    secrets.set('rollback-connection', {'token': 'rollback-secret-sentinel'})
+    Path('/app/secrets/nostr_zap_signer.hex').write_text('11' * 32, encoding='ascii')
 asyncio.run(main())
 PY
 
@@ -79,10 +83,14 @@ docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 from pathlib import Path
+from backend.app.connection_secret_store import ConnectionSecretStore
 from backend.app.ln_address_store import LNAddressStore
 async def main():
     rows=await LNAddressStore(Path('/app/secrets/lnswitchboard.db')).list_addresses()
     assert {row['local_part'] for row in rows} == {'before-upgrade', 'during-rollback'}
+    secrets=ConnectionSecretStore(Path('/app/secrets/lnswitchboard.db'), Path('/app/secrets/connection-secrets.key'))
+    assert secrets.get('rollback-connection') == {'token': 'rollback-secret-sentinel'}
+    assert Path('/app/secrets/nostr_zap_signer.hex').read_text(encoding='ascii') == '11' * 32
 asyncio.run(main())
 PY
 

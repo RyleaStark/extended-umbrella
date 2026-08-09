@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-archive-recovery-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -18,6 +18,7 @@ cleanup() {
 trap cleanup EXIT
 mkdir -p "$APP_DATA_DIR/data/secrets" "$APP_DATA_DIR/data/.lnswitchboard-state-backup-v1" "$APP_DATA_DIR/hooks"
 chmod 0777 "$APP_DATA_DIR/data" "$APP_DATA_DIR/data/secrets"
+chmod 0700 "$APP_DATA_DIR/data/.lnswitchboard-state-backup-v1"
 cp -a "$PACKAGE_DIR/hooks/." "$APP_DATA_DIR/hooks/"
 # Model a power loss after canonical commit and after the database source moved
 # to backup, but before the remaining key was archived and links were created.
@@ -34,6 +35,9 @@ PY
 cp -a "$APP_DATA_DIR/data/lnswitchboard.db" "$APP_DATA_DIR/data/secrets/lnswitchboard.db"
 cp -a "$APP_DATA_DIR/data/connection-secrets.key" "$APP_DATA_DIR/data/secrets/connection-secrets.key"
 mv "$APP_DATA_DIR/data/lnswitchboard.db" "$APP_DATA_DIR/data/.lnswitchboard-state-backup-v1/lnswitchboard.db"
+docker run --rm -v "$APP_DATA_DIR/data:/data" \
+  alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+  sh -c 'chown -R 0:0 /data/.lnswitchboard-state-backup-v1 && chmod 0700 /data/.lnswitchboard-state-backup-v1'
 printf '%s\n' 'services:' '  app_proxy:' '    image: alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1' > "$FIXTURE/app-proxy.yml"
 compose() {
   docker compose --project-name "$PROJECT" -f "$PACKAGE_DIR/docker-compose.yml" -f "$FIXTURE/app-proxy.yml" "$@"
@@ -41,8 +45,9 @@ compose() {
 compose run --rm --no-deps state_migrate
 [ -L "$APP_DATA_DIR/data/lnswitchboard.db" ]
 [ -L "$APP_DATA_DIR/data/connection-secrets.key" ]
-test -s "$APP_DATA_DIR/data/.lnswitchboard-state-backup-v1/lnswitchboard.db"
-test -s "$APP_DATA_DIR/data/.lnswitchboard-state-backup-v1/connection-secrets.key"
+docker run --rm -v "$APP_DATA_DIR/data:/data:ro" \
+  alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+  sh -c 'test -s /data/.lnswitchboard-state-backup-v1/lnswitchboard.db; test -s /data/.lnswitchboard-state-backup-v1/connection-secrets.key'
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data/secrets:/app/secrets" --entrypoint python "$APP_IMAGE" - <<'PY'
 from pathlib import Path

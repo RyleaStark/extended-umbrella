@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -12,10 +12,10 @@ import re, sys, yaml
 root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
-assert manifest['version'] == '0.4.0.rc16-umbrel.1'
+assert manifest['version'] == '0.4.0.rc17-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc17@sha256:bc500ed74215fddcf237b71b7d3950ae2106752aed29aec17ae297d3d60b8f8b'
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 mesh = compose['services']['cloudflare-mesh']
 assert mesh['image'] == 'cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
@@ -54,7 +54,7 @@ for pattern in (r'(?i)password\s*[:=]\s*["\']?[^$\s{]', r'(?i)(access|refresh|me
 print('GREEN static_package_security_and_persistence_contract_ok')
 PY
 
-# Validate every application environment key against the exact RC16 Settings model.
+# Validate every application environment key against the exact RC17 Settings model.
 docker run --rm -i --platform linux/arm64 \
   -v "$PACKAGE_DIR/docker-compose.yml:/package/docker-compose.yml:ro" \
   --entrypoint python "$APP_IMAGE" - <<'PY'
@@ -74,13 +74,13 @@ for name, field in Settings.model_fields.items():
 compose = yaml.safe_load(Path('/package/docker-compose.yml').read_text(encoding='utf-8'))
 keys = set(compose['services']['lnswitchboard']['environment'])
 unknown = sorted(keys - allowed)
-assert not unknown, f'RC16 ignores package environment keys: {unknown}'
-print('GREEN exact_rc16_settings_contract_ok')
+assert not unknown, f'RC17 ignores package environment keys: {unknown}'
+print('GREEN exact_rc17_settings_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = '31171a1101fe5811def720a7d4dccdf2f15ee461' ]
-echo 'GREEN exact_rc16_source_revision_ok'
+[ "$app_revision" = '52fd8ac6e7c972c72dd2e1b650ef83d7f73cb331' ]
+echo 'GREEN exact_rc17_source_revision_ok'
 
 for image in "$APP_IMAGE" "$TAILSCALE_IMAGE" "$MESH_IMAGE"; do
   output=$(docker buildx imagetools inspect "$image")
