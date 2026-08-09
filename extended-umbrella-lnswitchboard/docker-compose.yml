@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -41,7 +41,20 @@ services:
         install -d -m 0700 -o 1000 -g 1000 /data/tailscale
         install -d -m 0700 -o 1000 -g 1000 /data/tailscale/control
         install -d -m 0700 -o 1000 -g 1000 /data/tailscale/status
+        test ! -L /app-proxy-config
+        test -d /app-proxy-config
+        chown 0:0 /app-proxy-config
+        chmod 0755 /app-proxy-config
+        test "$(stat -c '%u:%g:%a' /app-proxy-config)" = '0:0:755'
+        rm -f /app-proxy-config/app-proxy.env.tmp
+        set -C
+        printf 'LOG_LEVEL=silent\nPROXY_AUTH_WHITELIST=\n' > /app-proxy-config/app-proxy.env.tmp
+        set +C
+        chown 0:0 /app-proxy-config/app-proxy.env.tmp
+        chmod 0444 /app-proxy-config/app-proxy.env.tmp
+        mv -f /app-proxy-config/app-proxy.env.tmp /app-proxy-config/app-proxy.env
     volumes:
+      - ${APP_DATA_DIR}/data/proxy-config:/app-proxy-config
       - ${APP_DATA_DIR}/data/secrets:/data
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/cloudflare-mesh-token
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/cloudflare-mesh-state
@@ -52,13 +65,17 @@ services:
     environment:
       APP_HOST: lnswitchboard
       APP_PORT: 22121
+      LOG_LEVEL: silent
+      CUSTOM_DOTENV_FILE: /lnswitchboard-proxy-config/app-proxy.env
+    volumes:
+      - ${APP_DATA_DIR}/data/proxy-config:/lnswitchboard-proxy-config:ro
     depends_on:
       lnswitchboard:
         condition: service_healthy
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure

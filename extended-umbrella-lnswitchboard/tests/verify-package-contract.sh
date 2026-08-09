@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -12,10 +12,10 @@ import re, sys, yaml
 root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
-assert manifest['version'] == '0.4.0.rc18-umbrel.1'
+assert manifest['version'] == '0.4.0.rc20-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6'
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 mesh = compose['services']['cloudflare-mesh']
 assert mesh['image'] == 'cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
@@ -30,6 +30,18 @@ assert '${BITCOIN_NETWORK}' not in (root / 'docker-compose.yml').read_text(encod
 assert app['environment']['LND_HOST'] == '${APP_LIGHTNING_NODE_IP}'
 assert app['environment']['DEP_ENV'] == 'UMBREL'
 assert app['environment']['TRUSTED_HOSTS'] == '*'
+proxy = compose['services']['app_proxy']
+assert proxy['environment']['LOG_LEVEL'] == 'silent'
+assert 'PROXY_AUTH_WHITELIST' not in proxy['environment']
+assert proxy['environment']['CUSTOM_DOTENV_FILE'] == '/lnswitchboard-proxy-config/app-proxy.env'
+assert '${APP_DATA_DIR}/data/proxy-config:/lnswitchboard-proxy-config:ro' in proxy['volumes']
+init = compose['services']['init']
+assert '${APP_DATA_DIR}/data/proxy-config:/app-proxy-config' in init['volumes']
+init_script = init['command'][-1]
+assert "proxy-config/app-proxy.env" in init_script
+assert "LOG_LEVEL=silent" in init_script
+assert "PROXY_AUTH_WHITELIST=" in init_script
+assert "chmod 0444" in init_script
 assert '/api/health' in app['healthcheck']['test'][-1]
 ts = compose['services']['tailscale']
 assert ts['entrypoint'] == ['/usr/local/bin/lnswitchboard-tailscale-supervisor']
@@ -54,12 +66,14 @@ for pattern in (r'(?i)password\s*[:=]\s*["\']?[^$\s{]', r'(?i)(access|refresh|me
 print('GREEN static_package_security_and_persistence_contract_ok')
 PY
 
-# Validate every application environment key against the exact RC18 Settings model.
+# Validate every application environment key against the exact RC20 Settings model.
 docker run --rm -i --platform linux/arm64 \
   -v "$PACKAGE_DIR/docker-compose.yml:/package/docker-compose.yml:ro" \
   --entrypoint python "$APP_IMAGE" - <<'PY'
 from pathlib import Path
+import os
 import yaml
+from pydantic import ValidationError
 from pydantic.aliases import AliasChoices
 from backend.app.config import Settings
 
@@ -74,13 +88,33 @@ for name, field in Settings.model_fields.items():
 compose = yaml.safe_load(Path('/package/docker-compose.yml').read_text(encoding='utf-8'))
 keys = set(compose['services']['lnswitchboard']['environment'])
 unknown = sorted(keys - allowed)
-assert not unknown, f'RC18 ignores package environment keys: {unknown}'
-print('GREEN exact_rc18_settings_contract_ok')
+assert not unknown, f'RC20 ignores package environment keys: {unknown}'
+invalid_redirects = {
+    'CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK': [
+        'https://admin.example/api/cloudflare/oauth/callback',
+        'http://[::ffff:127.0.0.1]:22121/api/cloudflare/oauth/callback',
+    ],
+    'CLOUDFLARE_OAUTH_REDIRECT_PAGE': [
+        'http://oauth.example/callback/',
+        'https://oauth.example/callback/?code=query-secret',
+    ],
+}
+for env_name, values in invalid_redirects.items():
+    for value in values:
+        os.environ[env_name] = value
+        try:
+            Settings()
+        except ValidationError:
+            pass
+        else:
+            raise AssertionError(f'RC20 accepted unsafe OAuth redirect {env_name}={value}')
+    os.environ.pop(env_name, None)
+print('GREEN exact_rc20_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = '2538ef2f5a77af3734470f76266e079d03a95c34' ]
-echo 'GREEN exact_rc18_source_revision_ok'
+[ "$app_revision" = 'ef3e3354f0944844d12c48f10b2b2a88decb22fd' ]
+echo 'GREEN exact_rc20_source_revision_ok'
 
 for image in "$APP_IMAGE" "$TAILSCALE_IMAGE" "$MESH_IMAGE"; do
   output=$(docker buildx imagetools inspect "$image")

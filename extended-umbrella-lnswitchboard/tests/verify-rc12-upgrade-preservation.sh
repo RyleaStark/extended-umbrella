@@ -3,7 +3,7 @@ set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 RC12_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc12@sha256:7b6bc8e30e5b1ccf5cc11ee764d0503ada7717945f2f02913b2b3404dabb8561'
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-upgrade-${RANDOM}-$$"
 
@@ -94,8 +94,8 @@ else:
 PY
 )
 
-# Start the exact RC18 image with the source path produced by the package and
-# prove both kinds of RC12 records remain visible through RC18's real stores.
+# Start the exact RC20 image with the source path produced by the package and
+# prove both kinds of RC12 records remain visible through RC20's real stores.
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$SECRETS_SOURCE:/app/secrets" \
   --entrypoint python "$APP_IMAGE" - <<'PY'
@@ -121,13 +121,13 @@ asyncio.run(LNAddressStore(path).add_address(
     domain='migration.invalid',
     min_sendable_sat=1,
     max_sendable_sat=100,
-    metadata_description='RC18 writeability fixture',
+    metadata_description='RC20 writeability fixture',
     success_message='writable',
     webhook_urls=[],
 ))
 with sqlite3.connect(path) as db:
     assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
-print('GREEN rc12_records_survive_rc18_package_upgrade')
+print('GREEN rc12_records_survive_rc20_package_upgrade')
 PY
 
 EXPECTED_SOURCE="$APP_DATA/data/secrets"

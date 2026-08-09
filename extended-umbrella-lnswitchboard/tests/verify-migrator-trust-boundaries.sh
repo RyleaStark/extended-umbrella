@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc18@sha256:e8a3f17e62ae3b53166db85342fed844140719cf83449601290bbd00fa50dfa4'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6'
 FIXTURE=$(mktemp -d)
 cleanup() {
   docker run --rm -v "$FIXTURE:/fixture" alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 sh -c 'rm -rf /fixture/* /fixture/.[!.]* /fixture/..?*' >/dev/null 2>&1 || true
@@ -31,6 +31,33 @@ set -e
 [ "$status" -ne 0 ]
 grep -q 'reserved staging path must be owned by root' <<<"$output"
 [ "$before" = "$(sha256sum "$root/.lnswitchboard-state-stage-v1/sentinel" "$root/new-state")" ]
+# The application-owned root may pre-position the new App Proxy config path.
+# A symlink must fail closed before the root migrator follows or replaces it.
+root="$FIXTURE/proxy-config-symlink"
+mkdir -p "$root/connectors"
+printf 'connector-sentinel\n' > "$root/connectors/private"
+ln -s connectors "$root/proxy-config"
+before=$(sha256sum "$root/connectors/private")
+set +e
+output=$(run_migrator "$root" 2>&1)
+status=$?
+set -e
+[ "$status" -ne 0 ]
+grep -q 'reserved App Proxy configuration path has an unexpected type' <<<"$output"
+[ "$before" = "$(sha256sum "$root/connectors/private")" ]
+test -L "$root/proxy-config"
+# An ordinary application-owned reserved directory is likewise untrusted.
+root="$FIXTURE/proxy-config-owner"
+mkdir -p "$root/proxy-config"
+printf 'untrusted-proxy-config\n' > "$root/proxy-config/app-proxy.env"
+before=$(sha256sum "$root/proxy-config/app-proxy.env")
+set +e
+output=$(run_migrator "$root" 2>&1)
+status=$?
+set -e
+[ "$status" -ne 0 ]
+grep -q 'reserved App Proxy configuration path is not trusted' <<<"$output"
+[ "$before" = "$(sha256sum "$root/proxy-config/app-proxy.env")" ]
 # A hard link to connector-private state is rejected before copying or archival.
 root="$FIXTURE/hard-link"
 mkdir -p "$root/connectors/mesh"

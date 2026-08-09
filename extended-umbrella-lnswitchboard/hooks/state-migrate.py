@@ -12,8 +12,10 @@ from __future__ import annotations
 import ctypes
 import errno
 import fcntl
+import hashlib
 import json
 import os
+import secrets
 import shutil
 import sqlite3
 import stat
@@ -22,7 +24,7 @@ import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import NoReturn
+from typing import Any, NoReturn
 
 ROOT = Path("/app-data")
 CANONICAL = ROOT / "secrets"
@@ -31,9 +33,11 @@ BACKUP = ROOT / ".lnswitchboard-state-backup-v1"
 MARKER = ROOT / ".lnswitchboard-state-migration-v1.json"
 MARKER_TEMP = ROOT / ".lnswitchboard-state-migration-v1.tmp"
 LOCK = ROOT / ".lnswitchboard-state-lock-v1.json"
+PROXY_CONFIG = ROOT / "proxy-config"
 EXCLUDED = {
     "secrets",
     "connectors",
+    "proxy-config",
     STAGE.name,
     BACKUP.name,
     MARKER.name,
@@ -251,6 +255,87 @@ def fsync_tree(path: Path) -> None:
         os.close(descriptor)
 
 
+def fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def state_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+
+    def visit(current: Path, relative: str) -> None:
+        current_stat = current.lstat()
+        if stat.S_ISREG(current_stat.st_mode):
+            digest.update(b"file\0")
+            digest.update(relative.encode("utf-8"))
+            digest.update(b"\0")
+            with current.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            return
+        if not stat.S_ISDIR(current_stat.st_mode):
+            fail("transaction state contains an unexpected filesystem object")
+        digest.update(b"dir\0")
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        for child in sorted(current.iterdir(), key=lambda item: item.name):
+            child_relative = f"{relative}/{child.name}" if relative else child.name
+            visit(child, child_relative)
+
+    visit(path, "")
+    return digest.hexdigest()
+
+
+def verify_state_digest(path: Path, expected: str, label: str) -> None:
+    validate_tree(path)
+    if state_digest(path) != expected:
+        fail(f"{label} does not match the durable transaction manifest")
+
+
+def verify_credential_bundle(directory: Path) -> None:
+    database_path = directory / "lnswitchboard.db"
+    key_path = directory / "connection-secrets.key"
+    if not database_path.exists():
+        return
+    verify_directory = Path(tempfile.mkdtemp(prefix=".credential-verify-", dir=directory))
+    verify_path = verify_directory / database_path.name
+    for suffix in ("", "-wal", "-shm"):
+        source = Path(f"{database_path}{suffix}")
+        if source.exists():
+            shutil.copy2(source, Path(f"{verify_path}{suffix}"))
+    try:
+        with sqlite3.connect(verify_path) as database:
+            exists = database.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='connection_secrets'"
+            ).fetchone()
+            ciphertexts = (
+                [row[0] for row in database.execute("SELECT ciphertext FROM connection_secrets")]
+                if exists
+                else []
+            )
+        if not ciphertexts:
+            return
+        if not key_path.exists():
+            fail("encrypted connection credentials exist without their key")
+        try:
+            from cryptography.fernet import Fernet, InvalidToken
+        except ImportError:
+            fail("credential bundle verification is unavailable")
+        try:
+            cipher = Fernet(key_path.read_bytes().strip())
+            for ciphertext in ciphertexts:
+                cipher.decrypt(bytes(ciphertext))
+        except (OSError, ValueError, InvalidToken, TypeError):
+            fail("the database and connection credential key are not one coherent bundle")
+    except sqlite3.Error as exc:
+        fail(f"the credential database did not open cleanly ({type(exc).__name__})")
+    finally:
+        shutil.rmtree(verify_directory)
+
+
 def verify_database(path: Path) -> None:
     if not path.exists():
         return
@@ -301,6 +386,35 @@ def database_row_count(path: Path, workspace: Path) -> int:
         shutil.rmtree(verify_directory)
 
 
+def verify_combined_bundle(canonical: Path, stage: Path) -> None:
+    validation = stage / ".bundle-validation"
+    if validation.exists():
+        if validation.is_dir():
+            shutil.rmtree(validation)
+        else:
+            validation.unlink()
+    validation.mkdir(mode=0o700)
+    try:
+        for directory in (canonical, stage):
+            if not directory.exists():
+                continue
+            for source in directory.iterdir():
+                if source == validation:
+                    continue
+                destination = validation / source.name
+                if destination.exists():
+                    continue
+                if source.is_dir():
+                    shutil.copytree(source, destination)
+                else:
+                    shutil.copy2(source, destination)
+        verify_database(validation / "lnswitchboard.db")
+        verify_credential_bundle(validation)
+    finally:
+        shutil.rmtree(validation)
+        fsync_directory(stage)
+
+
 def remove_owned_stage() -> None:
     if not STAGE.exists():
         return
@@ -341,6 +455,36 @@ def is_trusted_partial_migration(
 
 
 def validate_reserved_paths() -> None:
+    if PROXY_CONFIG.is_symlink():
+        fail("the reserved App Proxy configuration path has an unexpected type")
+    if PROXY_CONFIG.exists():
+        config_stat = PROXY_CONFIG.lstat()
+        if (
+            not stat.S_ISDIR(config_stat.st_mode)
+            or config_stat.st_uid != 0
+            or config_stat.st_gid != 0
+            or stat.S_IMODE(config_stat.st_mode) != 0o755
+        ):
+            fail("the reserved App Proxy configuration path is not trusted")
+        for child in PROXY_CONFIG.iterdir():
+            if child.name not in {"app-proxy.env", "app-proxy.env.tmp"} or child.is_symlink():
+                fail("the reserved App Proxy configuration contains an unexpected entry")
+            child_stat = child.lstat()
+            expected_mode = 0o444 if child.name == "app-proxy.env" else 0o600
+            if (
+                not stat.S_ISREG(child_stat.st_mode)
+                or child_stat.st_uid != 0
+                or child_stat.st_gid != 0
+                or child_stat.st_nlink != 1
+                or stat.S_IMODE(child_stat.st_mode) != expected_mode
+            ):
+                fail("the reserved App Proxy configuration entry is not trusted")
+        configured = PROXY_CONFIG / "app-proxy.env"
+        if configured.exists() and configured.read_text(encoding="utf-8") != (
+            "LOG_LEVEL=silent\n"
+            "PROXY_AUTH_WHITELIST=\n"
+        ):
+            fail("the reserved App Proxy privacy configuration is invalid")
     for path, label in ((STAGE, "staging"), (BACKUP, "backup")):
         if path.is_symlink():
             fail(f"the reserved {label} path has an unexpected type")
@@ -406,6 +550,7 @@ def ensure_backup_directory(*, create: bool) -> bool:
         if not create:
             return False
         BACKUP.mkdir(mode=0o700)
+        fsync_directory(ROOT)
     backup_stat = BACKUP.lstat()
     if (
         not stat.S_ISDIR(backup_stat.st_mode)
@@ -417,48 +562,110 @@ def ensure_backup_directory(*, create: bool) -> bool:
     return True
 
 
-def archive_source(source: Path, *, allow_subset_cleanup: bool = False) -> None:
-    ensure_backup_directory(create=True)
-    suffix = 1
-    while True:
-        name = source.name if suffix == 1 else f"{source.name}.{suffix}"
-        destination = BACKUP / name
-        try:
-            rename_noreplace(source, destination)
-            return
-        except FileExistsError:
-            if files_equal(source, destination) or (
-                allow_subset_cleanup
-                and source.is_dir()
-                and destination.is_dir()
-                and tree_is_subset(source, destination)
-            ):
-                if source.is_dir():
-                    shutil.rmtree(source)
-                else:
-                    source.unlink()
-                return
-            suffix += 1
+def validate_state_name(value: Any) -> str:
+    name = str(value)
+    if not name or name in EXCLUDED or Path(name).name != name:
+        fail("the migration marker contains an unsafe state name")
+    return name
 
 
-def read_marker() -> list[str] | None:
+def validate_transaction_marker(payload: dict[str, Any]) -> dict[str, Any]:
+    if payload.get("schema") == 1:
+        values = payload.get("migrated_entries")
+        if not isinstance(values, list):
+            fail("the migration marker is invalid")
+        names = [validate_state_name(value) for value in values]
+        if len(names) != len(set(names)):
+            fail("the migration marker contains duplicate state names")
+        return {"schema": 1, "migrated_entries": sorted(names)}
+    if payload.get("schema") != 2:
+        fail("the migration marker has an unsupported schema")
+    transaction_id = str(payload.get("transaction_id") or "")
+    if len(transaction_id) != 32 or any(character not in "0123456789abcdef" for character in transaction_id):
+        fail("the migration marker has an invalid transaction identifier")
+    phase = payload.get("phase")
+    if phase not in {"prepared", "complete"}:
+        fail("the migration marker has an invalid phase")
+    authorities = payload.get("authorities")
+    archives = payload.get("archives")
+    managed_entries = payload.get("managed_entries")
+    if not isinstance(authorities, dict) or not isinstance(archives, dict) or not isinstance(managed_entries, list):
+        fail("the migration marker has an invalid transaction manifest")
+    managed = [validate_state_name(value) for value in managed_entries]
+    if len(managed) != len(set(managed)) or set(managed) != set(authorities):
+        fail("the migration marker does not bind every managed state entry")
+
+    def validate_records(records: dict[str, Any], *, authority: bool) -> dict[str, dict[str, str]]:
+        validated: dict[str, dict[str, str]] = {}
+        for raw_name, raw_record in records.items():
+            name = validate_state_name(raw_name)
+            if not isinstance(raw_record, dict):
+                fail("the migration marker contains an invalid archive record")
+            archive_name = str(raw_record.get("archive_name") or "")
+            if not archive_name or Path(archive_name).name != archive_name:
+                fail("the migration marker contains an unsafe archive name")
+            expected = str(raw_record.get("sha256") or "")
+            if len(expected) != 64 or any(character not in "0123456789abcdef" for character in expected):
+                fail("the migration marker contains an invalid state digest")
+            record = {"archive_name": archive_name, "sha256": expected}
+            if authority:
+                temp_name = str(raw_record.get("temp_name") or "")
+                if not temp_name or Path(temp_name).name != temp_name:
+                    fail("the migration marker contains an unsafe snapshot name")
+                record["temp_name"] = temp_name
+            validated[name] = record
+        return validated
+
+    validated_authorities = validate_records(authorities, authority=True)
+    validated_archives = validate_records(archives, authority=False)
+    claimed_archives: dict[str, tuple[str, str]] = {}
+    for name, record in validated_authorities.items():
+        claimed_archives[record["archive_name"]] = (name, record["sha256"])
+    for name, record in validated_archives.items():
+        claim = (name, record["sha256"])
+        existing = claimed_archives.get(record["archive_name"])
+        if existing is not None and existing != claim:
+            fail("the migration marker reuses an archive destination")
+        claimed_archives[record["archive_name"]] = claim
+    return {
+        "schema": 2,
+        "transaction_id": transaction_id,
+        "phase": phase,
+        "managed_entries": sorted(managed),
+        "migrated_entries": sorted(managed),
+        "authorities": validated_authorities,
+        "archives": validated_archives,
+    }
+
+
+def read_marker() -> dict[str, Any] | None:
     if not MARKER.exists():
         return None
     try:
         payload = json.loads(MARKER.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         fail("the migration marker is invalid")
-    if payload.get("schema") != 1 or not isinstance(payload.get("migrated_entries"), list):
-        fail("the migration marker has an unsupported schema")
-    names: list[str] = []
-    for value in payload["migrated_entries"]:
-        name = str(value)
-        if not name or name in EXCLUDED or Path(name).name != name:
-            fail("the migration marker contains an unsafe state name")
-        names.append(name)
-    if len(names) != len(set(names)):
-        fail("the migration marker contains duplicate state names")
-    return sorted(names)
+    if not isinstance(payload, dict):
+        fail("the migration marker is invalid")
+    return validate_transaction_marker(payload)
+
+
+def write_marker_payload(payload: dict[str, Any]) -> None:
+    validated = validate_transaction_marker(payload)
+    if MARKER_TEMP.exists():
+        MARKER_TEMP.unlink()
+        fsync_directory(ROOT)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(MARKER_TEMP, flags, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        json.dump(validated, handle, separators=(",", ":"), sort_keys=True)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(MARKER_TEMP, MARKER)
+    fsync_directory(ROOT)
 
 
 def backup_candidate(name: str) -> Path | None:
@@ -481,7 +688,226 @@ def backup_candidate(name: str) -> Path | None:
     return selected
 
 
-def recover_archived_transaction(marker_names: list[str]) -> bool:
+def allocate_archive_name(name: str, reserved: set[str]) -> str:
+    ensure_backup_directory(create=True)
+    suffix = 1
+    while True:
+        candidate = name if suffix == 1 else f"{name}.{suffix}"
+        if candidate not in reserved and not (BACKUP / candidate).exists():
+            reserved.add(candidate)
+            return candidate
+        suffix += 1
+
+
+def copy_state(source: Path, destination: Path) -> None:
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    else:
+        shutil.copy2(source, destination)
+    preserve_ownership(source, destination)
+
+
+def build_transaction_manifest(
+    sources: list[Path], archive_only: set[str]
+) -> dict[str, Any]:
+    transaction_id = secrets.token_hex(16)
+    reserved: set[str] = set()
+    source_entries = {source.name: source for source in sources}
+    authorities: dict[str, dict[str, str]] = {}
+    archives: dict[str, dict[str, str]] = {}
+    for canonical in sorted(CANONICAL.iterdir(), key=lambda item: item.name):
+        expected = state_digest(canonical)
+        source = source_entries.get(canonical.name)
+        if (
+            source is not None
+            and canonical.name not in archive_only
+            and files_equal(source, canonical)
+        ):
+            archive_name = allocate_archive_name(canonical.name, reserved)
+            archives[canonical.name] = {"archive_name": archive_name, "sha256": expected}
+        else:
+            archive_name = allocate_archive_name(canonical.name, reserved)
+        authorities[canonical.name] = {
+            "archive_name": archive_name,
+            "sha256": expected,
+            "temp_name": f".txn-{transaction_id}-{len(authorities)}.tmp",
+        }
+    for source in sources:
+        if source.name in archives:
+            continue
+        archives[source.name] = {
+            "archive_name": allocate_archive_name(source.name, reserved),
+            "sha256": state_digest(source),
+        }
+    return validate_transaction_marker(
+        {
+            "schema": 2,
+            "transaction_id": transaction_id,
+            "phase": "prepared",
+            "managed_entries": sorted(authorities),
+            "migrated_entries": sorted(authorities),
+            "authorities": authorities,
+            "archives": archives,
+        }
+    )
+
+
+def copy_snapshot(source: Path, record: dict[str, str]) -> None:
+    ensure_backup_directory(create=True)
+    destination = BACKUP / record["archive_name"]
+    if destination.exists():
+        verify_state_digest(destination, record["sha256"], "archived authority")
+        return
+    temporary = BACKUP / record["temp_name"]
+    if temporary.exists():
+        validate_tree(temporary)
+        if temporary.is_dir():
+            shutil.rmtree(temporary)
+        else:
+            temporary.unlink()
+        fsync_directory(BACKUP)
+    copy_state(source, temporary)
+    fsync_tree(temporary)
+    verify_state_digest(temporary, record["sha256"], "transaction snapshot")
+    try:
+        rename_noreplace(temporary, destination)
+    except FileExistsError:
+        verify_state_digest(destination, record["sha256"], "archived authority")
+        if temporary.is_dir():
+            shutil.rmtree(temporary)
+        else:
+            temporary.unlink()
+    fsync_directory(BACKUP)
+
+
+def archive_exact(source: Path, record: dict[str, str]) -> None:
+    ensure_backup_directory(create=True)
+    destination = BACKUP / record["archive_name"]
+    if destination.exists():
+        verify_state_digest(destination, record["sha256"], "interim archive destination")
+        if source.is_dir() and destination.is_dir():
+            validate_tree(source)
+            if state_digest(source) != record["sha256"] and not tree_is_subset(source, destination):
+                fail("the remaining interim directory is not a safe archive subset")
+        else:
+            verify_state_digest(source, record["sha256"], "interim archive source")
+        if source.is_dir():
+            shutil.rmtree(source)
+        else:
+            source.unlink()
+        fsync_directory(ROOT)
+        return
+    verify_state_digest(source, record["sha256"], "interim archive source")
+    try:
+        rename_noreplace(source, destination)
+    except FileExistsError:
+        verify_state_digest(destination, record["sha256"], "interim archive destination")
+        if source.is_dir():
+            shutil.rmtree(source)
+        else:
+            source.unlink()
+    fsync_directory(BACKUP)
+    fsync_directory(ROOT)
+
+
+def recover_canonical_entry(name: str, record: dict[str, str]) -> None:
+    destination = CANONICAL / name
+    if destination.exists():
+        verify_state_digest(destination, record["sha256"], "canonical authority")
+        return
+    candidates = (STAGE / name, ROOT / name, BACKUP / record["archive_name"])
+    source = next(
+        (candidate for candidate in candidates if candidate.exists() and not candidate.is_symlink()),
+        None,
+    )
+    if source is None:
+        fail("the durable transaction has no remaining authority for canonical state")
+    verify_state_digest(source, record["sha256"], "transaction recovery authority")
+    staged = STAGE / name
+    if source != staged:
+        if staged.exists():
+            if staged.is_dir():
+                shutil.rmtree(staged)
+            else:
+                staged.unlink()
+        copy_state(source, staged)
+        fsync_tree(staged)
+    try:
+        rename_noreplace(staged, destination)
+    except FileExistsError:
+        verify_state_digest(destination, record["sha256"], "canonical authority")
+    fsync_directory(CANONICAL)
+
+
+def execute_prepared_transaction(payload: dict[str, Any]) -> None:
+    payload = validate_transaction_marker(payload)
+    if payload["schema"] != 2:
+        fail("cannot execute a legacy transaction marker")
+    prepared = dict(payload)
+    prepared["phase"] = "prepared"
+    if read_marker() != prepared:
+        write_marker_payload(prepared)
+    ensure_backup_directory(create=True)
+    if not CANONICAL.exists():
+        CANONICAL.mkdir(mode=0o750)
+        fsync_directory(ROOT)
+    if not STAGE.exists():
+        STAGE.mkdir(mode=0o700)
+        fsync_directory(ROOT)
+    for name, record in prepared["authorities"].items():
+        recover_canonical_entry(name, record)
+    verify_database(CANONICAL / "lnswitchboard.db")
+    verify_credential_bundle(CANONICAL)
+    normalize_app_ownership(CANONICAL)
+    fsync_tree(CANONICAL)
+
+    source_archives = prepared["archives"]
+    for name, record in prepared["authorities"].items():
+        source_record = source_archives.get(name)
+        if source_record is not None and source_record["archive_name"] == record["archive_name"]:
+            continue
+        copy_snapshot(CANONICAL / name, record)
+    for name, record in source_archives.items():
+        source = ROOT / name
+        destination = BACKUP / record["archive_name"]
+        if source.exists() and not source.is_symlink():
+            archive_exact(source, record)
+        elif destination.exists():
+            verify_state_digest(destination, record["sha256"], "completed interim archive")
+        else:
+            fail("the durable transaction is missing an interim archive")
+    for record in prepared["authorities"].values():
+        authority = BACKUP / record["archive_name"]
+        if not authority.exists():
+            fail("the durable transaction is missing a canonical authority")
+        verify_state_digest(authority, record["sha256"], "canonical archive authority")
+    ensure_compatibility_links()
+    remove_owned_stage()
+    fsync_directory(ROOT)
+    completed = dict(prepared)
+    completed["phase"] = "complete"
+    write_marker_payload(completed)
+
+
+def verify_legacy_archived_bundle(selected: dict[str, Path]) -> None:
+    validation = Path(tempfile.mkdtemp(prefix=".legacy-bundle-", dir=ROOT))
+    try:
+        for name, source in selected.items():
+            copy_state(source, validation / name)
+        verify_database(validation / "lnswitchboard.db")
+        verify_credential_bundle(validation)
+    finally:
+        shutil.rmtree(validation)
+        fsync_directory(ROOT)
+
+
+def record_complete_canonical_snapshot() -> None:
+    manifest = build_transaction_manifest([], set())
+    write_marker_payload(manifest)
+    execute_prepared_transaction(manifest)
+
+
+def recover_legacy_archived_transaction(marker_names: list[str]) -> bool:
     canonical_entries: dict[str, Path] = {}
     if CANONICAL.exists():
         if CANONICAL.is_symlink() or not CANONICAL.is_dir():
@@ -492,7 +918,6 @@ def recover_archived_transaction(marker_names: list[str]) -> bool:
         not STAGE.exists() or not any(STAGE.iterdir())
     ):
         return False
-
     selected: dict[str, Path] = {}
     for name in marker_names:
         candidate = backup_candidate(name)
@@ -501,11 +926,10 @@ def recover_archived_transaction(marker_names: list[str]) -> bool:
         selected[name] = candidate
     if not selected:
         fail("migration metadata exists without recoverable archived state")
-
+    verify_legacy_archived_bundle(selected)
     for name in set(marker_names) & canonical_entries.keys():
         if not files_equal(canonical_entries[name], selected[name]):
             fail("canonical state diverged during archived transaction recovery")
-
     if STAGE.exists():
         staged_entries = {entry.name: entry for entry in STAGE.iterdir()}
         for name, staged in list(staged_entries.items()):
@@ -519,59 +943,49 @@ def recover_archived_transaction(marker_names: list[str]) -> bool:
                 staged_entries.pop(name)
     else:
         STAGE.mkdir(mode=0o700)
+        fsync_directory(ROOT)
         staged_entries = {}
-
     for name, source in selected.items():
         if name in canonical_entries or name in staged_entries:
             continue
         staged = STAGE / name
-        if source.is_dir():
-            shutil.copytree(source, staged)
-        else:
-            shutil.copy2(source, staged)
-        preserve_ownership(source, staged)
+        copy_state(source, staged)
         staged_entries[name] = staged
     verify_database(STAGE / "lnswitchboard.db")
     fsync_tree(STAGE)
-
     if not CANONICAL.exists():
         CANONICAL.mkdir(mode=0o750)
+        fsync_directory(ROOT)
     for name in marker_names:
         destination = CANONICAL / name
         if destination.exists():
             continue
         rename_noreplace(STAGE / name, destination)
+        fsync_directory(CANONICAL)
     normalize_app_ownership(CANONICAL)
     fsync_tree(CANONICAL)
     remove_owned_stage()
     ensure_compatibility_links()
-    write_marker(marker_names)
+    record_complete_canonical_snapshot()
     print(
         "lnSwitchboard state migration: recovered "
-        f"{len(marker_names)} archived state entries"
+        f"{len(marker_names)} legacy archived state entries"
     )
     return True
 
 
-def write_marker(migrated: list[str]) -> None:
-    payload = {"schema": 1, "migrated_entries": sorted(migrated)}
-    if MARKER_TEMP.exists():
-        MARKER_TEMP.unlink()
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
-    descriptor = os.open(MARKER_TEMP, flags, 0o600)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, separators=(",", ":"), sort_keys=True)
-        handle.write("\n")
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(MARKER_TEMP, MARKER)
-
-
 def _main_locked() -> None:
     validate_reserved_paths()
-    marker_names = read_marker()
+    marker = read_marker()
+    if marker is not None and marker["schema"] == 2 and marker["phase"] == "prepared":
+        execute_prepared_transaction(marker)
+        print("lnSwitchboard state migration: resumed durable prepared transaction")
+        return
+    marker_names = (
+        list(marker.get("managed_entries") or marker.get("migrated_entries") or [])
+        if marker is not None
+        else []
+    )
     sources: list[Path] = []
     for item in sorted(ROOT.iterdir(), key=lambda candidate: candidate.name):
         if item.name in EXCLUDED:
@@ -581,23 +995,43 @@ def _main_locked() -> None:
                 fail("an unexpected symbolic link exists in interim state")
             continue
         sources.append(item)
+    if MARKER_TEMP.exists() and marker is None:
+        if not sources:
+            fail("a temporary migration marker exists without recoverable source state")
+        MARKER_TEMP.unlink()
+        fsync_directory(ROOT)
     if not sources:
-        if marker_names is not None and recover_archived_transaction(marker_names):
+        if marker is not None and marker["schema"] == 2 and not CANONICAL.exists():
+            recoverable = dict(marker)
+            recoverable["phase"] = "prepared"
+            write_marker_payload(recoverable)
+            execute_prepared_transaction(recoverable)
+            print("lnSwitchboard state migration: recovered the bound archived transaction")
+            return
+        if (
+            marker is not None
+            and marker["schema"] == 1
+            and recover_legacy_archived_transaction(marker_names)
+        ):
             return
         if CANONICAL.exists():
             if CANONICAL.is_symlink() or not CANONICAL.is_dir():
                 fail("the canonical secrets path has an unexpected type")
             validate_tree(CANONICAL)
             verify_database(CANONICAL / "lnswitchboard.db")
+            verify_credential_bundle(CANONICAL)
             normalize_app_ownership(CANONICAL)
             remove_owned_stage()
             ensure_compatibility_links()
-            if marker_names is not None:
-                write_marker([entry.name for entry in CANONICAL.iterdir()])
+            if marker is not None and marker["schema"] == 1:
+                record_complete_canonical_snapshot()
         elif STAGE.exists():
             fail("staged state exists without canonical or source state")
+        elif BACKUP.exists() and any(BACKUP.iterdir()) and marker is None:
+            fail("archived state exists without an authenticated transaction marker")
         if MARKER_TEMP.exists():
             MARKER_TEMP.unlink()
+            fsync_directory(ROOT)
         print("lnSwitchboard state migration: canonical or fresh layout; no migration needed")
         return
 
@@ -619,7 +1053,6 @@ def _main_locked() -> None:
     remove_owned_stage()
     STAGE.mkdir(mode=0o700)
     archive_only: set[str] = set()
-    subset_archive_cleanup: set[str] = set()
     interim_database = ROOT / "lnswitchboard.db"
     historical_database = CANONICAL / "lnswitchboard.db"
     if (
@@ -659,7 +1092,7 @@ def _main_locked() -> None:
             for name in source_entries
         )
         rollback_extension = (
-            marker_names is not None
+            marker is not None
             and set(marker_names).issubset(canonical_entries)
             and all(
                 name not in canonical_entries
@@ -690,12 +1123,6 @@ def _main_locked() -> None:
             # lost after some source entries were archived but before rollback
             # compatibility links were created.
             archive_only.update(source_entries)
-            if torn_archive_cleanup:
-                subset_archive_cleanup.update(
-                    name
-                    for name in source_entries
-                    if not files_equal(source_entries[name], canonical_entries[name])
-                )
         elif rollback_extension:
             # A completed prior migration proves the root-layout application was
             # a rollback. Preserve newly created root entries alongside the
@@ -738,6 +1165,7 @@ def _main_locked() -> None:
         to_commit.append(source)
 
     verify_database(STAGE / "lnswitchboard.db")
+    verify_combined_bundle(CANONICAL, STAGE)
     fsync_tree(STAGE)
 
     # Re-check all destinations immediately before the first commit mutation.
@@ -763,16 +1191,13 @@ def _main_locked() -> None:
     normalize_app_ownership(CANONICAL)
     fsync_tree(CANONICAL)
 
-    migrated_names = sorted(set(marker_names or []) | {source.name for source in sources})
-    for source in sources:
-        archive_source(
-            source,
-            allow_subset_cleanup=source.name in subset_archive_cleanup,
-        )
-    ensure_compatibility_links()
-    remove_owned_stage()
-    write_marker(migrated_names)
-    print(f"lnSwitchboard state migration: preserved {len(migrated_names)} state entries")
+    manifest = build_transaction_manifest(sources, archive_only)
+    write_marker_payload(manifest)
+    execute_prepared_transaction(manifest)
+    print(
+        "lnSwitchboard state migration: preserved "
+        f"{len(manifest['managed_entries'])} bound state entries"
+    )
 
 
 def main() -> None:

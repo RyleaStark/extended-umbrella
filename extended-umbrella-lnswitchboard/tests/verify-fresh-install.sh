@@ -81,7 +81,7 @@ done
 [ "$web_health" = healthy ]
 [ "$ts_health" = healthy ]
 
-# Exercise Umbrel-proxy-shaped requests against the actual RC18 listener.
+# Exercise Umbrel-proxy-shaped requests against the actual RC20 listener.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import urllib.request
 headers = {
@@ -97,7 +97,30 @@ for path in ('/', '/api/health'):
 print('GREEN fresh_install_proxy_routes_ok')
 PY
 
-# Seed through RC18, remove both runtime containers, recreate them, and prove
+callback_code='APPLICATION_LOOPBACK_CODE_SECRET'
+callback_state='APPLICATION_LOOPBACK_STATE_SECRET'
+docker exec -i "${APP_ID}_web" python - "$callback_code" "$callback_state" <<'PY'
+import http.client, sys
+from urllib.parse import urlencode
+query = urlencode({'code': sys.argv[1], 'state': sys.argv[2]})
+connection = http.client.HTTPConnection('127.0.0.1', 22121, timeout=5)
+connection.request('GET', f'/api/cloudflare/oauth/callback?{query}')
+response = connection.getresponse()
+body = response.read()
+location = response.getheader('Location', '')
+assert response.status == 303, response.status
+assert sys.argv[1] not in location and sys.argv[2] not in location
+assert sys.argv[1].encode() not in body and sys.argv[2].encode() not in body
+print('GREEN application_loopback_callback_response_redacts_query')
+PY
+docker logs "${APP_ID}_web" > "$FIXTURE/application.stdout" 2> "$FIXTURE/application.stderr"
+for secret in "$callback_code" "$callback_state"; do
+  ! grep -Fq "$secret" "$FIXTURE/application.stdout"
+  ! grep -Fq "$secret" "$FIXTURE/application.stderr"
+done
+printf 'GREEN application_runtime_logs_redact_loopback_query_without_app_proxy\n'
+
+# Seed through RC20, remove both runtime containers, recreate them, and prove
 # the persisted database remains intact rather than living in a container layer.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import asyncio
@@ -127,6 +150,10 @@ for _ in $(seq 1 45); do
 done
 [ "$web_health" = healthy ]
 [ "$ts_health" = healthy ]
+docker run --rm -v "$APP_DATA_DIR:/app-root:ro" \
+  alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+  sh -c "test \"\$(stat -c '%u:%g:%a' /app-root/data/proxy-config/app-proxy.env)\" = '0:0:444' && grep -qx 'LOG_LEVEL=silent' /app-root/data/proxy-config/app-proxy.env && grep -qx 'PROXY_AUTH_WHITELIST=' /app-root/data/proxy-config/app-proxy.env"
+printf 'GREEN fresh_install_proxy_privacy_override_file_ok\n'
 
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import asyncio, sqlite3
