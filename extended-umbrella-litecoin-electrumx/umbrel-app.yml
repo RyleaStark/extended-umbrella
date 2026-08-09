@@ -1,0 +1,35 @@
+manifestVersion: 1.1
+id: extended-umbrella-litecoin-electrumx
+implements:
+  - extended-umbrella-litecoin-electrs
+category: bitcoin
+name: "ElectrumX (LTC)"
+version: "2.0.0-umbrel.1"
+tagline: "A lightweight Litecoin Electrum server"
+description: >-
+  Run a personal Litecoin Electrum server powered by ElectrumX 2.0 and Litecoin Core.
+  Connect Electrum-compatible Litecoin wallets directly to your own indexed node over
+  your local network or Tor. ElectrumX (LTC) is an independent indexer and can satisfy
+  the same Electrs (LTC) capability used by compatible applications such as Litecoin Space.
+releaseNotes: >-
+  Initial staging release with actual ElectrumX 2.0, Litecoin mainnet and MWEB-aware
+  transaction parsing, a Litecoin-specific 51003 endpoint, Tor connectivity, independent
+  persistent storage, and the approved ElectrumX (LTC) identity.
+developer: "Electrum developers and RyleaStark"
+website: https://electrumx-spesmilo.readthedocs.io/
+dependencies:
+  - extended-umbrella-litecoin-core
+repo: https://github.com/RyleaStark/umbrel-electrumx-ltc
+support: https://github.com/RyleaStark/umbrel-electrumx-ltc/issues
+port: 2108
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrumx/gallery/icon.png
+gallery:
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrumx/gallery/1.png
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+backupIgnore:
+  - data/electrumx/meta
+  - data/electrumx/hist
+submitter: "Rylea Stark"
+submission: https://github.com/RyleaStark/extended-umbrella
