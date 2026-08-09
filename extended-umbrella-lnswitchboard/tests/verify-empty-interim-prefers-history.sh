@@ -27,6 +27,12 @@ printf '%s\n' \
 compose() {
   docker compose --project-name "$PROJECT" -f "$PACKAGE_DIR/docker-compose.yml" -f "$FIXTURE/app-proxy.yml" "$@"
 }
+fixture_sha256() {
+  docker run --rm \
+    -v "$1:/fixture-file:ro" \
+    alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+    sha256sum /fixture-file | cut -d' ' -f1
+}
 cleanup() {
   compose down --volumes --remove-orphans >/dev/null 2>&1 || true
   docker run --rm -v "$FIXTURE:/fixture" alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 sh -c 'rm -rf /fixture/* /fixture/.[!.]* /fixture/..?*' >/dev/null 2>&1 || true
@@ -57,9 +63,9 @@ from backend.app.ln_address_store import LNAddressStore
 LNAddressStore(Path('/app/secrets/lnswitchboard.db'))
 Path('/app/secrets/connection-secrets.key').write_text('interim-fixture-key', encoding='utf-8')
 PY
-historical_before=$(sha256sum "$APP_DATA_DIR/data/secrets/lnswitchboard.db" | cut -d' ' -f1)
+historical_before=$(fixture_sha256 "$APP_DATA_DIR/data/secrets/lnswitchboard.db")
 compose run --rm --no-deps state_migrate
-historical_after=$(sha256sum "$APP_DATA_DIR/data/secrets/lnswitchboard.db" | cut -d' ' -f1)
+historical_after=$(fixture_sha256 "$APP_DATA_DIR/data/secrets/lnswitchboard.db")
 [ "$historical_before" = "$historical_after" ]
 test -L "$APP_DATA_DIR/data/lnswitchboard.db"
 [ "$(readlink "$APP_DATA_DIR/data/lnswitchboard.db")" = 'secrets/lnswitchboard.db' ]
