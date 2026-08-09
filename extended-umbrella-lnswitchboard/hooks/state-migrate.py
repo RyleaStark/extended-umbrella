@@ -85,12 +85,8 @@ def preserve_ownership(source: Path, copied: Path) -> None:
 
 
 def normalize_app_ownership(path: Path) -> None:
-    """Make canonical state writable only by the RC15 application user."""
-    mode = stat.S_IMODE(path.stat(follow_symlinks=False).st_mode)
-    if path.is_dir():
-        mode |= stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
-    else:
-        mode |= stat.S_IRUSR | stat.S_IWUSR
+    """Make canonical state private and writable by the RC15 app user."""
+    mode = 0o700 if path.is_dir() else 0o600
     os.chown(path, 1000, 1000, follow_symlinks=False)
     os.chmod(path, mode, follow_symlinks=False)
     if path.is_dir():

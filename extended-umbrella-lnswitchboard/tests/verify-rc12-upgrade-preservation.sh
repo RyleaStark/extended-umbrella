@@ -73,6 +73,11 @@ cleanup() {
 trap cleanup EXIT
 compose config --format json > "$FIXTURE/rendered.json"
 compose run --rm --no-deps state_migrate
+state_mode=$(stat -c '%u:%g:%a' "$APP_DATA/data/secrets/lnswitchboard.db")
+[ "$state_mode" = '1000:1000:600' ] || {
+  echo "canonical database ownership/mode is $state_mode; expected 1000:1000:600" >&2
+  exit 1
+}
 SECRETS_SOURCE=$(python3 - "$FIXTURE/rendered.json" <<'PY'
 import json,sys
 config=json.load(open(sys.argv[1], encoding='utf-8'))
