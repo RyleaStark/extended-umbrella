@@ -39,6 +39,34 @@ printf '%s\n' 'services:' '  app_proxy:' '    image: alpine:3.22.1@sha256:4bcff6
 compose() {
   docker compose --project-name "$PROJECT" -f "$PACKAGE_DIR/docker-compose.yml" -f "$FIXTURE/app-proxy.yml" "$@"
 }
+set +e
+output=$(compose run --rm --no-deps --entrypoint python state_migrate -c '
+import importlib.util
+from pathlib import Path
+spec=importlib.util.spec_from_file_location("state_migrate_legacy_fault", "/opt/lnswitchboard/state-migrate.py")
+module=importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(module)
+original=module.rename_noreplace
+fired=False
+def rename(source, destination):
+    global fired
+    destination=Path(destination)
+    if destination == module.CANONICAL / "connection-secrets.key" and not fired:
+        fired=True
+        marker=module.read_marker()
+        assert marker is not None
+        assert marker["schema"] == 2 and marker["phase"] == "prepared", marker
+        assert not destination.exists()
+        raise OSError("injected legacy canonical-before fault")
+    return original(source, destination)
+module.rename_noreplace=rename
+module.main()
+' 2>&1)
+status=$?
+set -e
+[ "$status" -ne 0 ]
+grep -q 'injected legacy canonical-before fault' <<<"$output"
 compose run --rm --no-deps state_migrate
 [ "$(cat "$APP_DATA_DIR/data/secrets/connection-secrets.key")" = 'complete-key-material' ]
 python3 - "$APP_DATA_DIR/data/secrets/lnswitchboard.db" <<'PY'

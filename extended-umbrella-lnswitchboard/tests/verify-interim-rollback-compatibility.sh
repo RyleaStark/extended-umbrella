@@ -51,6 +51,11 @@ PY
 
 compose run --rm --no-deps state_migrate
 
+MARKER_BEFORE_ROLLBACK=$(docker run --rm --user 0:0 \
+  -v "$APP_DATA_DIR/data:/state:ro" \
+  --entrypoint python "$APP_IMAGE" \
+  -c 'import json; print(json.load(open("/state/.lnswitchboard-state-migration-v1.json"))["transaction_id"])')
+
 test -L "$APP_DATA_DIR/data/lnswitchboard.db" || {
   echo 'interim rollback path is not a compatibility symlink' >&2
   exit 1
@@ -78,6 +83,14 @@ PY
 
 # Re-upgrade must accept the owned compatibility link and preserve both records.
 compose run --rm --no-deps state_migrate
+MARKER_AFTER_REUPGRADE=$(docker run --rm --user 0:0 \
+  -v "$APP_DATA_DIR/data:/state:ro" \
+  --entrypoint python "$APP_IMAGE" \
+  -c 'import json; print(json.load(open("/state/.lnswitchboard-state-migration-v1.json"))["transaction_id"])')
+[ "$MARKER_BEFORE_ROLLBACK" != "$MARKER_AFTER_REUPGRADE" ] || {
+  echo 're-upgrade retained a stale completed recovery authority' >&2
+  exit 1
+}
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data/secrets:/app/secrets" \
   --entrypoint python "$APP_IMAGE" - <<'PY'
@@ -94,4 +107,26 @@ async def main():
 asyncio.run(main())
 PY
 
-echo 'GREEN interim_rollback_and_reupgrade_preserve_records'
+# The refreshed completed marker must recover the post-rollback generation, not
+# the stale pre-rollback snapshot, if canonical state is later lost.
+docker run --rm --user 0:0 -v "$APP_DATA_DIR/data:/state" \
+  --entrypoint sh "$APP_IMAGE" -c \
+  'rm -rf /state/secrets; find /state -maxdepth 1 -type l -delete'
+compose run --rm --no-deps state_migrate
+docker run --rm -i --platform linux/arm64 --user 1000:1000 \
+  -v "$APP_DATA_DIR/data/secrets:/app/secrets" \
+  --entrypoint python "$APP_IMAGE" - <<'PY'
+import asyncio
+from pathlib import Path
+from backend.app.connection_secret_store import ConnectionSecretStore
+from backend.app.ln_address_store import LNAddressStore
+async def main():
+    rows=await LNAddressStore(Path('/app/secrets/lnswitchboard.db')).list_addresses()
+    assert {row['local_part'] for row in rows} == {'before-upgrade', 'during-rollback'}
+    secrets=ConnectionSecretStore(Path('/app/secrets/lnswitchboard.db'), Path('/app/secrets/connection-secrets.key'))
+    assert secrets.get('rollback-connection') == {'token': 'rollback-secret-sentinel'}
+    assert Path('/app/secrets/nostr_zap_signer.hex').read_text(encoding='ascii') == '11' * 32
+asyncio.run(main())
+PY
+
+echo 'GREEN interim_rollback_reupgrade_and_completed_recovery_preserve_records'

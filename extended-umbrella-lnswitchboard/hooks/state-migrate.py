@@ -925,6 +925,63 @@ def record_complete_canonical_snapshot() -> None:
     execute_prepared_transaction(manifest)
 
 
+def complete_marker_matches_canonical(marker: dict[str, Any]) -> bool:
+    if marker["schema"] != 2 or marker["phase"] != "complete":
+        return False
+    canonical_entries = {entry.name: entry for entry in CANONICAL.iterdir()}
+    authorities = marker["authorities"]
+    if set(authorities) != set(canonical_entries):
+        return False
+    if not ensure_backup_directory(create=False):
+        return False
+    for name, record in authorities.items():
+        canonical = canonical_entries[name]
+        if state_digest(canonical) != record["sha256"]:
+            return False
+        archived = BACKUP / record["archive_name"]
+        if not archived.exists() or archived.is_symlink():
+            return False
+        if state_digest(archived) != record["sha256"]:
+            return False
+    return True
+
+
+def build_legacy_recovery_manifest(selected: dict[str, Path]) -> dict[str, Any]:
+    transaction_id = secrets.token_hex(16)
+    canonical_entries = (
+        {entry.name: entry for entry in CANONICAL.iterdir()}
+        if CANONICAL.exists()
+        else {}
+    )
+    staged_entries = {entry.name: entry for entry in STAGE.iterdir()}
+    projected = dict(canonical_entries)
+    projected.update(staged_entries)
+    authorities: dict[str, dict[str, str]] = {}
+    reserved = {path.name for path in selected.values()}
+    for name, authority in sorted(projected.items()):
+        archive_name = (
+            selected[name].name
+            if name in selected
+            else allocate_archive_name(name, reserved)
+        )
+        authorities[name] = {
+            "archive_name": archive_name,
+            "sha256": state_digest(authority),
+            "temp_name": f".txn-{transaction_id}-{len(authorities)}.tmp",
+        }
+    return validate_transaction_marker(
+        {
+            "schema": 2,
+            "transaction_id": transaction_id,
+            "phase": "prepared",
+            "managed_entries": sorted(authorities),
+            "migrated_entries": sorted(authorities),
+            "authorities": authorities,
+            "archives": {},
+        }
+    )
+
+
 def recover_legacy_archived_transaction(marker_names: list[str]) -> bool:
     canonical_entries: dict[str, Path] = {}
     if CANONICAL.exists():
@@ -969,22 +1026,11 @@ def recover_legacy_archived_transaction(marker_names: list[str]) -> bool:
         staged = STAGE / name
         copy_state(source, staged)
         staged_entries[name] = staged
-    verify_database(STAGE / "lnswitchboard.db")
+    verify_combined_bundle(CANONICAL, STAGE)
     fsync_tree(STAGE)
-    if not CANONICAL.exists():
-        CANONICAL.mkdir(mode=0o750)
-        fsync_directory(ROOT)
-    for name in marker_names:
-        destination = CANONICAL / name
-        if destination.exists():
-            continue
-        rename_noreplace(STAGE / name, destination)
-        fsync_directory(CANONICAL)
-    normalize_app_ownership(CANONICAL)
-    fsync_tree(CANONICAL)
-    remove_owned_stage()
-    ensure_compatibility_links()
-    record_complete_canonical_snapshot()
+    prepared = build_legacy_recovery_manifest(selected)
+    write_marker_payload(prepared)
+    execute_prepared_transaction(prepared)
     print(
         "lnSwitchboard state migration: recovered "
         f"{len(marker_names)} legacy archived state entries"
@@ -1038,6 +1084,15 @@ def _main_locked() -> None:
             validate_tree(CANONICAL)
             verify_database(CANONICAL / "lnswitchboard.db")
             verify_credential_bundle(CANONICAL)
+            if (
+                marker is not None
+                and marker["schema"] == 2
+                and not complete_marker_matches_canonical(marker)
+            ):
+                # A rollback can update the compatibility-linked canonical DB
+                # without adding a top-level source entry. Supersede the old
+                # recovery authority before it can later restore stale bytes.
+                record_complete_canonical_snapshot()
             normalize_app_ownership(CANONICAL)
             remove_owned_stage()
             ensure_compatibility_links()
