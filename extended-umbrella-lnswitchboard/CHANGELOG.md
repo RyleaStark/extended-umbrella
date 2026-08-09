@@ -2,6 +2,16 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc16-umbrel.1 — 2026-08-08
+
+### Fixed
+
+- Pins the immutable multi-platform RC16 image built from exact merged source `31171a1101fe5811def720a7d4dccdf2f15ee461`; RC16 redacts credential-bearing webhook destinations and exception messages from application logs.
+- Enables the authoritative `UMBREL` deployment mode so authenticated App Proxy requests from remote clients reach the administration listener.
+- Preserves rollback compatibility with interim RC15 packages through exact relative links to the canonical `data/secrets` state tree, so records remain live across upgrade, rollback, and re-upgrade.
+- Uses atomic no-overwrite state commits, rejects ambiguous disjoint dual-layout bundles, resumes only recognizable partial commits, and masks connector state from the privileged migration service.
+- Grants the Cloudflare Mesh sidecar the exact supplementary group needed to read its UID/GID 1000 token handoff without broadening application access to Mesh private state.
+
 ## 0.4.0.rc15-umbrel.8 — 2026-08-08
 
 ### Fixed

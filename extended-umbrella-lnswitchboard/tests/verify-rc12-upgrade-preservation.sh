@@ -3,7 +3,7 @@ set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 RC12_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc12@sha256:7b6bc8e30e5b1ccf5cc11ee764d0503ada7717945f2f02913b2b3404dabb8561'
-RC15_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-upgrade-${RANDOM}-$$"
 
@@ -11,7 +11,11 @@ APP_DATA="$FIXTURE/app-data"
 LND_DATA="$FIXTURE/lightning"
 mkdir -p "$APP_DATA/data/secrets" "$APP_DATA/hooks" "$LND_DATA/data/chain/bitcoin/mainnet"
 cp -a "$PACKAGE_DIR/hooks/." "$APP_DATA/hooks/"
-chmod 0777 "$APP_DATA/data" "$APP_DATA/data/secrets"
+# Umbrel creates the bind-mount parent as root; RC12's populated secrets tree is
+# owned by its runtime UID/GID 1000.
+docker run --rm -v "$APP_DATA/data:/data" \
+  alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+  sh -c 'chown 0:0 /data && chmod 0755 /data && chown 1000:1000 /data/secrets && chmod 0750 /data/secrets'
 printf 'fixture certificate\n' > "$LND_DATA/tls.cert"
 printf '00\n' > "$LND_DATA/data/chain/bitcoin/mainnet/invoice.macaroon"
 printf '00\n' > "$LND_DATA/data/chain/bitcoin/mainnet/readonly.macaroon"
@@ -90,11 +94,11 @@ else:
 PY
 )
 
-# Start the exact RC15 image with the source path produced by the package and
-# prove both kinds of RC12 records remain visible through RC15's real stores.
+# Start the exact RC16 image with the source path produced by the package and
+# prove both kinds of RC12 records remain visible through RC16's real stores.
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$SECRETS_SOURCE:/app/secrets" \
-  --entrypoint python "$RC15_IMAGE" - <<'PY'
+  --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 import sqlite3
 from pathlib import Path
@@ -117,13 +121,13 @@ asyncio.run(LNAddressStore(path).add_address(
     domain='migration.invalid',
     min_sendable_sat=1,
     max_sendable_sat=100,
-    metadata_description='RC15 writeability fixture',
+    metadata_description='RC16 writeability fixture',
     success_message='writable',
     webhook_urls=[],
 ))
 with sqlite3.connect(path) as db:
     assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
-print('GREEN rc12_records_survive_rc15_package_upgrade')
+print('GREEN rc12_records_survive_rc16_package_upgrade')
 PY
 
 EXPECTED_SOURCE="$APP_DATA/data/secrets"

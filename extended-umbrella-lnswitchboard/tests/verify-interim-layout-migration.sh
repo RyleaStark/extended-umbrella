@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-RC15_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-interim-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -37,7 +37,7 @@ trap cleanup EXIT
 # Seed state exactly where the broken umbrel.2-.7 packages mounted /app/secrets.
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data:/app/secrets" \
-  --entrypoint python "$RC15_IMAGE" - <<'PY'
+  --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 from pathlib import Path
 from backend.app.ln_address_store import LNAddressStore
@@ -61,10 +61,11 @@ test -s "$APP_DATA_DIR/data/secrets/lnswitchboard.db" || {
   echo 'canonical migrated database is missing' >&2
   exit 1
 }
-test ! -e "$APP_DATA_DIR/data/lnswitchboard.db" || {
-  echo 'interim database was not archived' >&2
+test -L "$APP_DATA_DIR/data/lnswitchboard.db" || {
+  echo 'interim database compatibility link is missing' >&2
   exit 1
 }
+[ "$(readlink "$APP_DATA_DIR/data/lnswitchboard.db")" = 'secrets/lnswitchboard.db' ]
 docker run --rm \
   -v "$APP_DATA_DIR/data:/app-data:ro" \
   alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
@@ -75,7 +76,7 @@ docker run --rm \
 
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data/secrets:/app/secrets" \
-  --entrypoint python "$RC15_IMAGE" - <<'PY'
+  --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio, sqlite3
 from pathlib import Path
 from backend.app.ln_address_store import LNAddressStore

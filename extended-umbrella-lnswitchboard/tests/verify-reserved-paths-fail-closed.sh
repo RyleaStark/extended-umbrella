@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-RC15_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-reserved-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -36,7 +36,7 @@ trap cleanup EXIT
 
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data:/app/secrets" \
-  --entrypoint python "$RC15_IMAGE" - <<'PY'
+  --entrypoint python "$APP_IMAGE" - <<'PY'
 from pathlib import Path
 from backend.app.connection_store import ConnectionStore
 ConnectionStore(Path('/app/secrets/lnswitchboard.db')).upsert_connection(

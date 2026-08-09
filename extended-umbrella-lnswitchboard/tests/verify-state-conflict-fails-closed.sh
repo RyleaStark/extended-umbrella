@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-RC15_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-conflict-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -39,7 +39,7 @@ seed() {
   local_part=$2
   docker run --rm -i --platform linux/arm64 --user 1000:1000 \
     -v "$mount_source:/app/secrets" \
-    --entrypoint python "$RC15_IMAGE" - "$local_part" <<'PY'
+    --entrypoint python "$APP_IMAGE" - "$local_part" <<'PY'
 import asyncio, sys
 from pathlib import Path
 from backend.app.ln_address_store import LNAddressStore
@@ -67,7 +67,7 @@ migration_output=$(compose run --rm --no-deps state_migrate 2>&1)
 migration_status=$?
 set -e
 [ "$migration_status" -ne 0 ]
-grep -q 'both historical and interim state exist with different contents' <<<"$migration_output"
+grep -q 'both historical and interim state exist as different bundles' <<<"$migration_output"
 
 historical_after=$(sha256sum "$APP_DATA_DIR/data/secrets/lnswitchboard.db" | cut -d' ' -f1)
 interim_after=$(sha256sum "$APP_DATA_DIR/data/lnswitchboard.db" | cut -d' ' -f1)

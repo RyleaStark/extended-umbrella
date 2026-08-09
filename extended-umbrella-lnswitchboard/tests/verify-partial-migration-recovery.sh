@@ -41,10 +41,13 @@ with sqlite3.connect(sys.argv[1]) as db:
 PY
 printf 'fixture-key-material\n' > "$APP_DATA_DIR/data/connection-secrets.key"
 # Model a power cut after the database commit but before the second state item
-# and before source archival. Also leave stale stage/marker-temp artifacts.
+# and before source archival. The root-owned stage retains the exact uncommitted
+# file, matching the production migration service's interrupted state.
 cp -p "$APP_DATA_DIR/data/lnswitchboard.db" "$APP_DATA_DIR/data/secrets/lnswitchboard.db"
-printf 'stale stage bytes\n' > "$APP_DATA_DIR/data/.lnswitchboard-state-stage-v1/stale"
-printf 'stale marker bytes\n' > "$APP_DATA_DIR/data/.lnswitchboard-state-migration-v1.tmp"
+cp -p "$APP_DATA_DIR/data/connection-secrets.key" "$APP_DATA_DIR/data/.lnswitchboard-state-stage-v1/connection-secrets.key"
+docker run --rm -v "$APP_DATA_DIR/data:/data" \
+  alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+  sh -c 'chown -R 0:0 /data/.lnswitchboard-state-stage-v1 && chmod 0700 /data/.lnswitchboard-state-stage-v1'
 
 compose run --rm --no-deps state_migrate
 

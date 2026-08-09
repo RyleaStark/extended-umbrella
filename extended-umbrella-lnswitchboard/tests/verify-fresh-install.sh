@@ -81,12 +81,12 @@ done
 [ "$web_health" = healthy ]
 [ "$ts_health" = healthy ]
 
-# Exercise Umbrel-proxy-shaped requests against the actual RC15 listener.
+# Exercise Umbrel-proxy-shaped requests against the actual RC16 listener.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import urllib.request
 headers = {
     'Host': 'lnswitchboard',
-    'X-Forwarded-For': '10.21.0.2',
+    'X-Forwarded-For': '8.8.8.8',
     'X-Forwarded-User': 'fixture-user',
     'X-Forwarded-Proto': 'http',
 }
@@ -97,7 +97,7 @@ for path in ('/', '/api/health'):
 print('GREEN fresh_install_proxy_routes_ok')
 PY
 
-# Seed through RC15, remove both runtime containers, recreate them, and prove
+# Seed through RC16, remove both runtime containers, recreate them, and prove
 # the persisted database remains intact rather than living in a container layer.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import asyncio

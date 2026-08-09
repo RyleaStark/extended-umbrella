@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-RC15_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-empty-interim-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -37,7 +37,7 @@ trap cleanup EXIT
 # Historical RC12 canonical database with a real record.
 docker run --rm -i --platform linux/arm64 \
   -v "$APP_DATA_DIR/data/secrets:/app/secrets" \
-  --entrypoint python "$RC15_IMAGE" - <<'PY'
+  --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 from pathlib import Path
 from backend.app.ln_address_store import LNAddressStore
@@ -51,7 +51,7 @@ PY
 # Interim package initialized a different but record-empty database and key.
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data:/app/secrets" \
-  --entrypoint python "$RC15_IMAGE" - <<'PY'
+  --entrypoint python "$APP_IMAGE" - <<'PY'
 from pathlib import Path
 from backend.app.ln_address_store import LNAddressStore
 LNAddressStore(Path('/app/secrets/lnswitchboard.db'))
@@ -61,11 +61,12 @@ historical_before=$(sha256sum "$APP_DATA_DIR/data/secrets/lnswitchboard.db" | cu
 compose run --rm --no-deps state_migrate
 historical_after=$(sha256sum "$APP_DATA_DIR/data/secrets/lnswitchboard.db" | cut -d' ' -f1)
 [ "$historical_before" = "$historical_after" ]
-test ! -e "$APP_DATA_DIR/data/lnswitchboard.db"
+test -L "$APP_DATA_DIR/data/lnswitchboard.db"
+[ "$(readlink "$APP_DATA_DIR/data/lnswitchboard.db")" = 'secrets/lnswitchboard.db' ]
 
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data/secrets:/app/secrets" \
-  --entrypoint python "$RC15_IMAGE" - <<'PY'
+  --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 from pathlib import Path
 from backend.app.ln_address_store import LNAddressStore

@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -19,6 +19,7 @@ services:
       - ${APP_DATA_DIR}/hooks/state-migrate.py:/opt/lnswitchboard/state-migrate.py:ro
     tmpfs:
       - /tmp:size=16m,mode=0700
+      - /app-data/connectors:size=64k,mode=000
     restart: "no"
 
   init:
@@ -57,7 +58,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc15@sha256:9ee6cdea6deaa25b88efde9c5e4309f4862cfaf6dd1b76429053610dcd193857
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc16@sha256:d9309bc5183ce40740efd5ac291bf1092390570d1fd03ecba8c3761945c55f81
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
@@ -67,6 +68,7 @@ services:
     environment:
       SERVICE_PORT: "22121"
       PUBLIC_SERVICE_PORT: "21212"
+      DEP_ENV: "UMBREL"
       LND_HOST: "${APP_LIGHTNING_NODE_IP}"
       LND_GRPC_PORT: "10009"
       LND_TLS_PATH: "/lnd/tls.cert"
@@ -111,6 +113,8 @@ services:
     entrypoint: ["sh", "/opt/lnswitchboard/mesh-entrypoint.sh"]
     restart: on-failure
     stop_grace_period: 30s
+    group_add:
+      - "1000"
     depends_on:
       init:
         condition: service_completed_successfully
