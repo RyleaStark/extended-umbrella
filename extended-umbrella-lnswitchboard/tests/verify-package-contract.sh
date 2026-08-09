@@ -116,6 +116,47 @@ app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.openc
 [ "$app_revision" = 'ef3e3354f0944844d12c48f10b2b2a88decb22fd' ]
 echo 'GREEN exact_rc20_source_revision_ok'
 
+docker run --rm -i \
+  -e DEP_ENV=DOCKER \
+  -e TRUSTED_HOSTS='*' \
+  -e LND_HOST=127.0.0.1 \
+  "$APP_IMAGE" python - <<'PY'
+import asyncio
+from backend.app.main import admin_app
+
+async def status_for(client):
+    sent=[]
+    delivered=False
+    async def receive():
+        nonlocal delivered
+        if not delivered:
+            delivered=True
+            return {'type':'http.request','body':b'','more_body':False}
+        return {'type':'http.disconnect'}
+    async def send(message):
+        sent.append(message)
+    scope={
+        'type':'http',
+        'asgi':{'version':'3.0'},
+        'http_version':'1.1',
+        'method':'GET',
+        'scheme':'http',
+        'path':'/api/health',
+        'raw_path':b'/api/health',
+        'query_string':b'',
+        'root_path':'',
+        'headers':[(b'host',b'lnswitchboard.local')],
+        'client':(client,43210),
+        'server':('lnswitchboard.local',22121),
+    }
+    await admin_app(scope, receive, send)
+    return next(message['status'] for message in sent if message['type']=='http.response.start')
+
+assert asyncio.run(status_for('203.0.113.25')) == 403
+assert asyncio.run(status_for('192.168.50.25')) == 200
+PY
+printf 'GREEN exact_rc20_generic_docker_admin_boundary_is_application_owned\n'
+
 for image in "$APP_IMAGE" "$TAILSCALE_IMAGE" "$MESH_IMAGE"; do
   output=$(docker buildx imagetools inspect "$image")
   grep -q 'Platform:[[:space:]]*linux/amd64' <<<"$output"
