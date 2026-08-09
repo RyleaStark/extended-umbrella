@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoinpool
 category: bitcoin
 name: "Litecoin Space"
-version: "3.3.1-umbrel.4"
+version: "3.3.1-umbrel.5"
 tagline: "Explore your own Litecoin node"
 description: >-
   Litecoin Space is a self-hosted Litecoin block explorer and mempool visualizer.
@@ -11,13 +11,14 @@ description: >-
 
   This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.
 releaseNotes: >-
-  Rebuilds Litecoin Space with port 51002 as its native Fulcrum default across backend
-  configuration, samples, and frontend API documentation, matching the staged Fulcrum app.
+  Uses the Electrs (LTC) capability contract for its Electrum connection, allowing umbrelOS
+  to satisfy the dependency with either Electrs (LTC) or Fulcrum (LTC). The rebuilt app
+  retains 51002 as its native Fulcrum default.
 developer: "Litecoin Foundation and RyleaStark"
 website: https://litecoinspace.org
 dependencies:
   - extended-umbrella-litecoin-core
-  - extended-umbrella-litecoin-fulcrum
+  - extended-umbrella-litecoin-electrs
 repo: https://github.com/RyleaStark/umbrel-litecoinspace
 support: https://github.com/RyleaStark/umbrel-litecoinspace/issues
 port: 3012
