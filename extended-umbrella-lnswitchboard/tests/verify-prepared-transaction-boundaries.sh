@@ -88,6 +88,29 @@ for case in marker_before marker_after archive_before archive_after final_marker
   set -e
   [ "$status" -ne 0 ]
   grep -q 'injected' <<<"$output"
+  if [[ "$case" == marker_before || "$case" == marker_after ]]; then
+    docker run --rm -i -v "$data:/app-data:ro" "$APP_IMAGE" python - "$case" <<'PY'
+import json
+from pathlib import Path
+import sys
+root=Path('/app-data')
+case=sys.argv[1]
+# A prepared manifest must be durable before the first canonical credential
+# entry is committed. Both original authorities remain untouched here.
+assert not (root/'secrets'/'lnswitchboard.db').exists(), case
+assert not (root/'secrets'/'connection-secrets.key').exists(), case
+assert (root/'lnswitchboard.db').is_file(), case
+assert (root/'connection-secrets.key').is_file(), case
+marker=root/'.lnswitchboard-state-migration-v1.json'
+temporary=root/'.lnswitchboard-state-migration-v1.tmp'
+if case == 'marker_before':
+    assert not marker.exists(), case
+    assert temporary.is_file(), case
+else:
+    payload=json.loads(marker.read_text())
+    assert payload['schema'] == 2 and payload['phase'] == 'prepared', payload
+PY
+  fi
   run_migrator "$data" >/dev/null
   docker run --rm -i --user 1000:1000 -v "$data/secrets:/state" "$APP_IMAGE" python - <<'PY'
 from pathlib import Path
@@ -122,4 +145,48 @@ value=ConnectionSecretStore(Path('/state/lnswitchboard.db'), Path('/state/connec
 assert value == {'token':'transaction-bound-secret'}, value
 PY
 printf 'GREEN completed_manifest_recovers_bound_database_and_key\n'
+docker run --rm -i \
+  -v "$PACKAGE_DIR/hooks/state-migrate.py:/opt/state-migrate.py:ro" \
+  "$APP_IMAGE" python - <<'PY'
+import copy
+import importlib.util
+spec=importlib.util.spec_from_file_location('state_migrate_marker_validation', '/opt/state-migrate.py')
+module=importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(module)
+base={
+    'schema':2,
+    'transaction_id':'0'*32,
+    'phase':'prepared',
+    'managed_entries':['lnswitchboard.db'],
+    'migrated_entries':['lnswitchboard.db'],
+    'authorities':{
+        'lnswitchboard.db':{
+            'archive_name':'lnswitchboard.db',
+            'sha256':'0'*64,
+            'temp_name':'.txn-'+'0'*32+'-0.tmp',
+        },
+    },
+    'archives':{},
+}
+cases=[]
+state=copy.deepcopy(base)
+state['managed_entries']=state['migrated_entries']=['..']
+state['authorities']={'..': state['authorities']['lnswitchboard.db']}
+cases.append(state)
+archive=copy.deepcopy(base)
+archive['authorities']['lnswitchboard.db']['archive_name']='..'
+cases.append(archive)
+temporary=copy.deepcopy(base)
+temporary['authorities']['lnswitchboard.db']['temp_name']='..'
+cases.append(temporary)
+for payload in cases:
+    try:
+        module.validate_transaction_marker(payload)
+    except SystemExit as exc:
+        assert exc.code == 65, exc.code
+    else:
+        raise AssertionError(payload)
+PY
+printf 'GREEN transaction_marker_rejects_dotdot_path_components\n'
 printf 'GREEN prepared_transaction_all_commit_archive_marker_boundaries\n'

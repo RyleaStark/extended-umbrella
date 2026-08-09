@@ -564,7 +564,7 @@ def ensure_backup_directory(*, create: bool) -> bool:
 
 def validate_state_name(value: Any) -> str:
     name = str(value)
-    if not name or name in EXCLUDED or Path(name).name != name:
+    if not name or name in {".", ".."} or name in EXCLUDED or Path(name).name != name:
         fail("the migration marker contains an unsafe state name")
     return name
 
@@ -602,7 +602,11 @@ def validate_transaction_marker(payload: dict[str, Any]) -> dict[str, Any]:
             if not isinstance(raw_record, dict):
                 fail("the migration marker contains an invalid archive record")
             archive_name = str(raw_record.get("archive_name") or "")
-            if not archive_name or Path(archive_name).name != archive_name:
+            if (
+                not archive_name
+                or archive_name in {".", ".."}
+                or Path(archive_name).name != archive_name
+            ):
                 fail("the migration marker contains an unsafe archive name")
             expected = str(raw_record.get("sha256") or "")
             if len(expected) != 64 or any(character not in "0123456789abcdef" for character in expected):
@@ -610,7 +614,11 @@ def validate_transaction_marker(payload: dict[str, Any]) -> dict[str, Any]:
             record = {"archive_name": archive_name, "sha256": expected}
             if authority:
                 temp_name = str(raw_record.get("temp_name") or "")
-                if not temp_name or Path(temp_name).name != temp_name:
+                if (
+                    not temp_name
+                    or temp_name in {".", ".."}
+                    or Path(temp_name).name != temp_name
+                ):
                     fail("the migration marker contains an unsafe snapshot name")
                 record["temp_name"] = temp_name
             validated[name] = record
@@ -715,19 +723,29 @@ def build_transaction_manifest(
     source_entries = {source.name: source for source in sources}
     authorities: dict[str, dict[str, str]] = {}
     archives: dict[str, dict[str, str]] = {}
-    for canonical in sorted(CANONICAL.iterdir(), key=lambda item: item.name):
-        expected = state_digest(canonical)
-        source = source_entries.get(canonical.name)
+    projected_authorities = {
+        entry.name: entry for entry in CANONICAL.iterdir()
+    }
+    for source in sources:
+        if source.name in archive_only or source.name in projected_authorities:
+            continue
+        staged = STAGE / source.name
+        if not staged.exists():
+            fail("the prepared transaction is missing projected canonical state")
+        projected_authorities[source.name] = staged
+    for name, authority in sorted(projected_authorities.items()):
+        expected = state_digest(authority)
+        source = source_entries.get(name)
         if (
             source is not None
-            and canonical.name not in archive_only
-            and files_equal(source, canonical)
+            and name not in archive_only
+            and files_equal(source, authority)
         ):
-            archive_name = allocate_archive_name(canonical.name, reserved)
-            archives[canonical.name] = {"archive_name": archive_name, "sha256": expected}
+            archive_name = allocate_archive_name(name, reserved)
+            archives[name] = {"archive_name": archive_name, "sha256": expected}
         else:
-            archive_name = allocate_archive_name(canonical.name, reserved)
-        authorities[canonical.name] = {
+            archive_name = allocate_archive_name(name, reserved)
+        authorities[name] = {
             "archive_name": archive_name,
             "sha256": expected,
             "temp_name": f".txn-{transaction_id}-{len(authorities)}.tmp",
@@ -1149,7 +1167,6 @@ def _main_locked() -> None:
             "neither copy was changed"
         )
 
-    to_commit: list[Path] = []
     for source in sources:
         if source.name in archive_only:
             continue
@@ -1162,7 +1179,6 @@ def _main_locked() -> None:
         else:
             shutil.copy2(source, staged)
         preserve_ownership(source, staged)
-        to_commit.append(source)
 
     verify_database(STAGE / "lnswitchboard.db")
     verify_combined_bundle(CANONICAL, STAGE)
@@ -1175,21 +1191,6 @@ def _main_locked() -> None:
         destination = CANONICAL / source.name
         if destination.exists() and not files_equal(source, destination):
             fail("canonical state changed during migration; no source state was removed")
-
-    for source in to_commit:
-        staged = STAGE / source.name
-        destination = CANONICAL / source.name
-        if destination.exists():
-            if not files_equal(staged, destination):
-                fail("canonical state changed during migration commit")
-            continue
-        try:
-            rename_noreplace(staged, destination)
-        except FileExistsError:
-            if not files_equal(staged, destination):
-                fail("canonical state changed during migration commit")
-    normalize_app_ownership(CANONICAL)
-    fsync_tree(CANONICAL)
 
     manifest = build_transaction_manifest(sources, archive_only)
     write_marker_payload(manifest)
