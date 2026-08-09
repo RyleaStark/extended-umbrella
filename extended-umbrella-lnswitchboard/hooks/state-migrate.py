@@ -230,7 +230,13 @@ def main() -> None:
             if CANONICAL.is_symlink() or not CANONICAL.is_dir():
                 fail("the canonical secrets path has an unexpected type")
             validate_tree(CANONICAL)
+            verify_database(CANONICAL / "lnswitchboard.db")
             normalize_app_ownership(CANONICAL)
+            remove_owned_stage()
+        elif STAGE.exists():
+            fail("staged state exists without canonical or source state")
+        if MARKER_TEMP.exists():
+            MARKER_TEMP.unlink()
         print("lnSwitchboard state migration: canonical or fresh layout; no migration needed")
         return
 
