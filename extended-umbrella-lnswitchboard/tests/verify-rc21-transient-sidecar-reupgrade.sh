@@ -43,7 +43,14 @@ store.set('generation', {'value': sys.argv[1]})
 PY
 }
 
-ln -s secrets/lnswitchboard.db-journal "$ROOT/lnswitchboard.db-journal"
+root_link() {
+  local target=$1 name=$2
+  docker run --rm -v "$ROOT:/state" \
+    alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+    ln -s "$target" "/state/$name"
+}
+
+root_link secrets/lnswitchboard.db-journal lnswitchboard.db-journal
 status=0
 output=$(migrate 2>&1) || status=$?
 [ "$status" = 65 ]
@@ -62,14 +69,24 @@ test ! -L "$ROOT/lnswitchboard.db-shm"
 
 # Reproduce the exact shape emitted by superseded package bytes: a generated
 # sidecar compatibility link whose transient canonical target later vanishes.
-ln -s secrets/lnswitchboard.db-journal "$ROOT/lnswitchboard.db-journal"
+root_link secrets/lnswitchboard.db-journal lnswitchboard.db-journal
+migrate >/dev/null
+test ! -e "$ROOT/lnswitchboard.db-journal"
+test ! -e "$ROOT/.lnswitchboard-transient-link-retire-v1"
+
+# Reproduce process death after the link was atomically moved into the private
+# retirement directory but before its descriptor-bound unlink completed.
+docker run --rm -v "$ROOT:/state" \
+  alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+  sh -c 'mkdir -m 0700 /state/.lnswitchboard-transient-link-retire-v1; ln -s secrets/lnswitchboard.db-journal /state/.lnswitchboard-transient-link-retire-v1/lnswitchboard.db-journal'
 write_generation "$RC21_IMAGE" "$ROOT/secrets" during-rc21-rollback
-[ -L "$ROOT/lnswitchboard.db-journal" ]
+sudo test -L "$ROOT/.lnswitchboard-transient-link-retire-v1/lnswitchboard.db-journal"
 test ! -e "$ROOT/secrets/lnswitchboard.db-journal"
 
 migrate >/dev/null
 test ! -e "$ROOT/lnswitchboard.db-journal"
 test ! -L "$ROOT/lnswitchboard.db-journal"
+test ! -e "$ROOT/.lnswitchboard-transient-link-retire-v1"
 
 docker run --rm -i --user 1000:1000 \
   -v "$ROOT/secrets:/app/secrets" --entrypoint python "$APP_IMAGE" - <<'PY'
@@ -92,7 +109,7 @@ printf 'GREEN rc21_rollback_reupgrade_removes_only_generated_transient_sidecar_l
 db_before=$(sha256sum "$ROOT/secrets/lnswitchboard.db" | cut -d' ' -f1)
 printf 'outside-sentinel\n' > "$FIXTURE/outside-sentinel"
 outside_before=$(sha256sum "$FIXTURE/outside-sentinel" | cut -d' ' -f1)
-ln -s "$FIXTURE/outside-sentinel" "$ROOT/lnswitchboard.db-journal"
+root_link "$FIXTURE/outside-sentinel" lnswitchboard.db-journal
 status=0
 output=$(migrate 2>&1) || status=$?
 [ "$status" = 65 ]
@@ -104,12 +121,22 @@ outside_after=$(sha256sum "$FIXTURE/outside-sentinel" | cut -d' ' -f1)
 rm "$ROOT/lnswitchboard.db-journal"
 printf 'GREEN transient_sidecar_link_rejects_untrusted_target_without_mutation\n'
 
-ln -s secrets/lnswitchboard.db-journal "$ROOT/lnswitchboard.db-journal"
-ln -P "$ROOT/lnswitchboard.db-journal" "$FIXTURE/journal-link-alias"
+root_link secrets/lnswitchboard.db-journal lnswitchboard.db-journal
+docker run --rm -v "$ROOT:/state" \
+  alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
+  ln -n /state/lnswitchboard.db-journal /state/journal-link-alias
 status=0
 output=$(migrate 2>&1) || status=$?
 [ "$status" = 65 ]
-grep -q 'transient compatibility link has an unsafe link count' <<<"$output"
+grep -q 'transient compatibility link has unsafe metadata' <<<"$output"
 db_after=$(sha256sum "$ROOT/secrets/lnswitchboard.db" | cut -d' ' -f1)
 [ "$db_before" = "$db_after" ]
 printf 'GREEN transient_sidecar_link_rejects_extra_hardlink_without_mutation\n'
+
+docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
+  --cap-add CHOWN --cap-add DAC_OVERRIDE --cap-add FOWNER \
+  --security-opt no-new-privileges:true --tmpfs /tmp:size=16m,mode=0700 \
+  -v "$FIXTURE:/fixture" \
+  -v "$PACKAGE_DIR/hooks/state-migrate.py:/opt/state-migrate.py:ro" \
+  -v "$PACKAGE_DIR/tests/probes/transient-retirement-race.py:/opt/probe.py:ro" \
+  --entrypoint python "$APP_IMAGE" /opt/probe.py

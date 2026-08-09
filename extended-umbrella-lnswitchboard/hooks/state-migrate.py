@@ -36,6 +36,7 @@ LOCK = ROOT / ".lnswitchboard-state-lock-v1.json"
 LOCK_TEMP = ROOT / ".lnswitchboard-state-lock-v1.tmp"
 PROXY_CONFIG = ROOT / "proxy-config"
 PUBLIC_BACKEND = ROOT / "public-backend"
+TRANSIENT_RETIRE = ROOT / ".lnswitchboard-transient-link-retire-v1"
 HOST_VIEW = Path("/host-view")
 PRIVILEGED_MOUNT_SOURCES = (
     Path("secrets"),
@@ -56,6 +57,7 @@ EXCLUDED = {
     MARKER_TEMP.name,
     LOCK.name,
     LOCK_TEMP.name,
+    TRANSIENT_RETIRE.name,
 }
 AT_FDCWD = -100
 RENAME_NOREPLACE = 1
@@ -65,7 +67,7 @@ TRANSIENT_SQLITE_COMPATIBILITY_NAMES = {
     "lnswitchboard.db-shm",
 }
 APP_PROXY_ENV = b"LOG_LEVEL=silent\nPROXY_AUTH_WHITELIST=\n"
-APP_PROXY_TEMP_PREFIX = "app-proxy.env.tmp."
+APP_PROXY_TEMP_PREFIX = ".app-proxy.env.tmp."
 APP_PROXY_LEGACY_TEMP_NAME = "app-proxy.env.tmp"
 
 
@@ -231,6 +233,17 @@ def rename_noreplace(source: Path, destination: Path) -> None:
     if error == errno.EEXIST:
         raise FileExistsError(error, os.strerror(error), destination)
     raise OSError(error, os.strerror(error), destination)
+
+
+def unlink_private(directory_fd: int, name: str) -> None:
+    """Unlink inside a root-private directory without mutable path dispatch."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    unlinkat = libc.unlinkat
+    unlinkat.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
+    unlinkat.restype = ctypes.c_int
+    if unlinkat(directory_fd, os.fsencode(name), 0) != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error), name)
 
 
 def validate_tree(path: Path) -> None:
@@ -678,6 +691,26 @@ def validate_reserved_paths() -> None:
             "PROXY_AUTH_WHITELIST=\n"
         ):
             fail("the reserved App Proxy privacy configuration is invalid")
+    if TRANSIENT_RETIRE.is_symlink():
+        fail("the transient compatibility retirement path has an unexpected type")
+    if TRANSIENT_RETIRE.exists():
+        retire_stat = TRANSIENT_RETIRE.lstat()
+        if (
+            not stat.S_ISDIR(retire_stat.st_mode)
+            or (retire_stat.st_uid, retire_stat.st_gid) != (0, 0)
+            or stat.S_IMODE(retire_stat.st_mode) != 0o700
+        ):
+            fail("the transient compatibility retirement path is not trusted")
+        for child in TRANSIENT_RETIRE.iterdir():
+            child_stat = child.lstat()
+            if (
+                child.name not in TRANSIENT_SQLITE_COMPATIBILITY_NAMES
+                or not stat.S_ISLNK(child_stat.st_mode)
+                or (child_stat.st_uid, child_stat.st_gid) != (0, 0)
+                or child_stat.st_nlink != 1
+                or Path(os.readlink(child)) != Path("secrets") / child.name
+            ):
+                fail("the transient compatibility retirement path contains an unexpected entry")
     for path, label in ((STAGE, "staging"), (BACKUP, "backup")):
         if path.is_symlink():
             fail(f"the reserved {label} path has an unexpected type")
@@ -715,51 +748,137 @@ def is_compatibility_link(path: Path) -> bool:
 
 
 def remove_transient_compatibility_links(marker: dict[str, Any] | None) -> None:
-    """Remove only generated links bound by durable migration authority."""
+    """Retire authority-bound transient links through a recoverable private dir."""
     root_fd = os.open(ROOT, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    validated: list[tuple[str, os.stat_result]] = []
+    retire_fd = -1
+    validated: dict[str, tuple[str, os.stat_result]] = {}
+    held_root_entries: dict[str, int] = {}
+
+    def matches(initial: os.stat_result, current: os.stat_result) -> bool:
+        return (
+            initial.st_dev,
+            initial.st_ino,
+            initial.st_mode,
+            initial.st_uid,
+            initial.st_gid,
+            initial.st_nlink,
+        ) == (
+            current.st_dev,
+            current.st_ino,
+            current.st_mode,
+            current.st_uid,
+            current.st_gid,
+            current.st_nlink,
+        )
+
+    def validate_candidate(directory_fd: int, name: str) -> os.stat_result:
+        try:
+            initial = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            raise
+        if not stat.S_ISLNK(initial.st_mode):
+            fail("a transient compatibility link has an unexpected type")
+        if (initial.st_uid, initial.st_gid) != (0, 0) or initial.st_nlink != 1:
+            fail("a transient compatibility link has unsafe metadata")
+        try:
+            target = Path(os.readlink(name, dir_fd=directory_fd))
+        except OSError:
+            fail("a transient compatibility link changed during validation")
+        if target != Path("secrets") / name:
+            fail("a transient compatibility link has an unexpected target")
+        if marker is None or marker.get("schema") != 2:
+            fail("a transient compatibility link lacks durable migration authority")
+        authority = marker.get("authorities", {}).get(name)
+        if not isinstance(authority, dict):
+            fail("a transient compatibility link lacks durable migration authority")
+        archived = BACKUP / authority["archive_name"]
+        if not archived.exists() or archived.is_symlink():
+            fail("a transient compatibility link lacks its bound archive authority")
+        verify_state_digest(
+            archived,
+            authority["sha256"],
+            "transient compatibility archive authority",
+        )
+        return initial
+
     try:
-        for name in sorted(TRANSIENT_SQLITE_COMPATIBILITY_NAMES):
-            try:
-                initial = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
-            except FileNotFoundError:
-                continue
-            if not stat.S_ISLNK(initial.st_mode):
-                continue
-            if initial.st_nlink != 1:
-                fail("a transient compatibility link has an unsafe link count")
-            try:
-                target = Path(os.readlink(name, dir_fd=root_fd))
-            except OSError:
-                fail("a transient compatibility link changed during validation")
-            if target != Path("secrets") / name:
-                fail("a transient compatibility link has an unexpected target")
-            if marker is None or marker.get("schema") != 2:
-                fail("a transient compatibility link lacks durable migration authority")
-            authority = marker.get("authorities", {}).get(name)
-            if not isinstance(authority, dict):
-                fail("a transient compatibility link lacks durable migration authority")
-            archived = BACKUP / authority["archive_name"]
-            if not archived.exists() or archived.is_symlink():
-                fail("a transient compatibility link lacks its bound archive authority")
-            verify_state_digest(
-                archived,
-                authority["sha256"],
-                "transient compatibility archive authority",
+        if TRANSIENT_RETIRE.exists():
+            retire_fd = os.open(
+                TRANSIENT_RETIRE,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
             )
-            validated.append((name, initial))
-        for name, initial in validated:
+        for name in sorted(TRANSIENT_SQLITE_COMPATIBILITY_NAMES):
+            root_entry: os.stat_result | None = None
+            retired_entry: os.stat_result | None = None
             try:
-                current = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+                candidate = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
             except FileNotFoundError:
-                fail("a transient compatibility link changed during validation")
-            if (current.st_dev, current.st_ino) != (initial.st_dev, initial.st_ino):
-                fail("a transient compatibility link changed during validation")
-        for name, _initial in validated:
-            os.unlink(name, dir_fd=root_fd)
-        if validated:
+                candidate = None
+            if candidate is not None and stat.S_ISLNK(candidate.st_mode):
+                root_entry = validate_candidate(root_fd, name)
+                held_fd = os.open(name, os.O_PATH | os.O_NOFOLLOW, dir_fd=root_fd)
+                held_entry = os.fstat(held_fd)
+                if not matches(root_entry, held_entry):
+                    os.close(held_fd)
+                    fail("a transient compatibility link changed during validation")
+                held_root_entries[name] = held_fd
+                root_entry = held_entry
+            if retire_fd >= 0:
+                try:
+                    retired_entry = validate_candidate(retire_fd, name)
+                except FileNotFoundError:
+                    retired_entry = None
+            if root_entry is not None and retired_entry is not None:
+                fail("a transient compatibility link exists in two retirement locations")
+            if root_entry is not None:
+                validated[name] = ("root", root_entry)
+            elif retired_entry is not None:
+                validated[name] = ("retired", retired_entry)
+        if any(location == "root" for location, _entry in validated.values()):
+            if retire_fd < 0:
+                TRANSIENT_RETIRE.mkdir(mode=0o700)
+                os.fsync(root_fd)
+                retire_fd = os.open(
+                    TRANSIENT_RETIRE,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                )
+            for name, (location, initial) in validated.items():
+                if location != "root":
+                    continue
+                rename_noreplace(ROOT / name, TRANSIENT_RETIRE / name)
+                moved = os.stat(name, dir_fd=retire_fd, follow_symlinks=False)
+                if not matches(initial, moved):
+                    rename_noreplace(TRANSIENT_RETIRE / name, ROOT / name)
+                    os.fsync(root_fd)
+                    os.fsync(retire_fd)
+                    if not os.listdir(retire_fd):
+                        os.close(retire_fd)
+                        retire_fd = -1
+                        TRANSIENT_RETIRE.rmdir()
+                        os.fsync(root_fd)
+                    fail("a transient compatibility link changed during retirement")
+                validated[name] = ("retired", moved)
+            os.fsync(root_fd)
+            os.fsync(retire_fd)
+        for name, (location, initial) in validated.items():
+            if location != "retired" or retire_fd < 0:
+                fail("a transient compatibility link was not safely retired")
+            current = os.stat(name, dir_fd=retire_fd, follow_symlinks=False)
+            if not matches(initial, current):
+                fail("a transient compatibility link changed during retirement")
+        for name in sorted(validated):
+            unlink_private(retire_fd, name)
+        if retire_fd >= 0:
+            os.fsync(retire_fd)
+            os.close(retire_fd)
+            retire_fd = -1
+            TRANSIENT_RETIRE.rmdir()
             os.fsync(root_fd)
     finally:
+        for held_fd in held_root_entries.values():
+            os.close(held_fd)
+        if retire_fd >= 0:
+            os.close(retire_fd)
         os.close(root_fd)
 
 

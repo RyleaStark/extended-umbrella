@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0.rc22-umbrel.2 — 2026-08-09
+
+- Recover the exact dot-prefixed App Proxy publication temporary emitted when the guarded writer is interrupted after file fsync and before atomic replacement.
+- Retire authority-bound legacy SQLite journal/WAL/SHM compatibility links through a root-private, crash-recoverable directory while holding the validated inode open, preventing a final pathname replacement from being deleted.
+- Add exact-writer crash recovery, retirement-interruption recovery, replacement-race, metadata, hardlink, symlink, and outside-mutation regressions.
+
 ## 0.4.0.rc22-umbrel.1 — 2026-08-09
 
 - Pin lnSwitchboard RC22 by immutable multi-architecture OCI index digest.
