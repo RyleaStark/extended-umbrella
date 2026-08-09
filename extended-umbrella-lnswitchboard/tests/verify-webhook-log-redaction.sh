@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
 docker run --rm -i --platform linux/arm64 --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 import io
@@ -20,7 +20,7 @@ address_store=LNAddressStore(db_path)
 secret_url='https://hooks.invalid/services/PERSISTED_PATH_SECRET?token=PERSISTED_QUERY_SECRET'
 stream=io.StringIO()
 handler=logging.StreamHandler(stream)
-logger=logging.getLogger('rc21-persisted-log-redaction-fixture')
+logger=logging.getLogger('rc22-persisted-log-redaction-fixture')
 logger.handlers[:]=[handler]
 logger.setLevel(logging.INFO)
 logger.propagate=False
@@ -79,7 +79,7 @@ for secret in ('PERSISTED_PATH_SECRET','PERSISTED_QUERY_SECRET','ClassShapedPack
     assert secret not in stream.getvalue(), stream.getvalue()
 
 # Model data persisted by RC16 while the migration marker remains, and prove
-# RC21 re-scrubs the history during rollback/re-upgrade.
+# RC22 re-scrubs the history during rollback/re-upgrade.
 now=datetime.now(tz=timezone.utc).isoformat()
 with sqlite3.connect(db_path) as conn:
     conn.execute(
@@ -106,5 +106,5 @@ with sqlite3.connect(db_path) as conn:
     },sort_keys=True)
 for secret in ('LEGACY_PATH_SECRET','LEGACY_QUERY_SECRET','LEGACY_SIGNATURE_SECRET','LEGACY_EXCEPTION_SECRET','LEGACY_RESPONSE_SECRET','LEGACY_MESSAGE_SECRET','LEGACY_DETAILS_SECRET'):
     assert secret not in legacy, legacy
-print('GREEN exact_rc21_webhook_logs_rescrub_after_rollback')
+print('GREEN exact_rc22_webhook_logs_rescrub_after_rollback')
 PY

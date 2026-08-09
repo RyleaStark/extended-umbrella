@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-reserved-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -60,3 +60,55 @@ after=$(sha256sum "$APP_DATA_DIR/data/lnswitchboard.db" | cut -d' ' -f1)
 test ! -e "$APP_DATA_DIR/data/secrets/lnswitchboard.db"
 test ! -e "$APP_DATA_DIR/data/connectors/lnswitchboard.db"
 printf 'GREEN reserved_path_symlink_fails_before_state_mutation\n'
+
+rm "$APP_DATA_DIR/data/.lnswitchboard-state-backup-v1"
+mkdir "$FIXTURE/outside-public-backend"
+printf 'outside-sentinel\n' > "$FIXTURE/outside-public-backend/sentinel"
+outside_before=$(sha256sum "$FIXTURE/outside-public-backend/sentinel" | cut -d' ' -f1)
+ln -s "$FIXTURE/outside-public-backend" "$APP_DATA_DIR/data/public-backend"
+set +e
+output=$(compose run --rm --no-deps state_migrate 2>&1)
+status=$?
+set -e
+[ "$status" -ne 0 ]
+grep -q 'reserved public backend path has an unexpected type' <<<"$output"
+after=$(sha256sum "$APP_DATA_DIR/data/lnswitchboard.db" | cut -d' ' -f1)
+outside_after=$(sha256sum "$FIXTURE/outside-public-backend/sentinel" | cut -d' ' -f1)
+[ "$before" = "$after" ]
+[ "$outside_before" = "$outside_after" ]
+printf 'GREEN public_backend_symlink_fails_before_state_or_outside_mutation\n'
+
+rm "$APP_DATA_DIR/data/public-backend"
+mkdir "$FIXTURE/outside-cloudflare-token"
+printf 'outside-token-sentinel\n' > "$FIXTURE/outside-cloudflare-token/sentinel"
+outside_before=$(sha256sum "$FIXTURE/outside-cloudflare-token/sentinel" | cut -d' ' -f1)
+ln -s "$FIXTURE/outside-cloudflare-token" "$APP_DATA_DIR/data/connectors/cloudflare-mesh"
+set +e
+output=$(compose run --rm --no-deps state_migrate 2>&1)
+status=$?
+set -e
+[ "$status" -ne 0 ]
+grep -q 'reserved writable mount source connectors/cloudflare-mesh is a symlink' <<<"$output"
+after=$(sha256sum "$APP_DATA_DIR/data/lnswitchboard.db" | cut -d' ' -f1)
+outside_after=$(sha256sum "$FIXTURE/outside-cloudflare-token/sentinel" | cut -d' ' -f1)
+[ "$before" = "$after" ]
+[ "$outside_before" = "$outside_after" ]
+printf 'GREEN connector_mount_symlink_fails_before_state_or_outside_mutation\n'
+
+rm "$APP_DATA_DIR/data/connectors/cloudflare-mesh"
+mkdir "$FIXTURE/outside-tailscale-control"
+printf 'outside-control-sentinel\n' > "$FIXTURE/outside-tailscale-control/sentinel"
+outside_before=$(sha256sum "$FIXTURE/outside-tailscale-control/sentinel" | cut -d' ' -f1)
+mkdir -p "$APP_DATA_DIR/data/secrets"
+ln -s "$FIXTURE/outside-tailscale-control" "$APP_DATA_DIR/data/secrets/tailscale"
+set +e
+output=$(compose run --rm --no-deps state_migrate 2>&1)
+status=$?
+set -e
+[ "$status" -ne 0 ]
+grep -q 'reserved writable mount source secrets/tailscale is a symlink' <<<"$output"
+after=$(sha256sum "$APP_DATA_DIR/data/lnswitchboard.db" | cut -d' ' -f1)
+outside_after=$(sha256sum "$FIXTURE/outside-tailscale-control/sentinel" | cut -d' ' -f1)
+[ "$before" = "$after" ]
+[ "$outside_before" = "$outside_after" ]
+printf 'GREEN tailscale_control_parent_symlink_fails_before_outside_mutation\n'

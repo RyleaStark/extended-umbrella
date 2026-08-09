@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-archive-recovery-${RANDOM}-$$"
 export APP_ID="$PROJECT"
@@ -33,6 +33,7 @@ ConnectionStore(root/'lnswitchboard.db').upsert_connection(
 (root/'connection-secrets.key').write_text('fixture-key', encoding='utf-8')
 PY
 cp -a "$APP_DATA_DIR/data/lnswitchboard.db" "$APP_DATA_DIR/data/secrets/lnswitchboard.db"
+cp -a "$APP_DATA_DIR/data/lnswitchboard.db-journal" "$APP_DATA_DIR/data/secrets/lnswitchboard.db-journal"
 cp -a "$APP_DATA_DIR/data/connection-secrets.key" "$APP_DATA_DIR/data/secrets/connection-secrets.key"
 mv "$APP_DATA_DIR/data/lnswitchboard.db" "$APP_DATA_DIR/data/.lnswitchboard-state-backup-v1/lnswitchboard.db"
 docker run --rm -v "$APP_DATA_DIR/data:/data" \
@@ -44,10 +45,12 @@ compose() {
 }
 compose run --rm --no-deps state_migrate
 [ -L "$APP_DATA_DIR/data/lnswitchboard.db" ]
+test ! -e "$APP_DATA_DIR/data/lnswitchboard.db-journal"
+test ! -L "$APP_DATA_DIR/data/lnswitchboard.db-journal"
 [ -L "$APP_DATA_DIR/data/connection-secrets.key" ]
 docker run --rm -v "$APP_DATA_DIR/data:/data:ro" \
   alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 \
-  sh -c 'test -s /data/.lnswitchboard-state-backup-v1/lnswitchboard.db; test -s /data/.lnswitchboard-state-backup-v1/connection-secrets.key'
+  sh -c 'test -s /data/.lnswitchboard-state-backup-v1/lnswitchboard.db; test -e /data/.lnswitchboard-state-backup-v1/lnswitchboard.db-journal; test -s /data/.lnswitchboard-state-backup-v1/connection-secrets.key'
 docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA_DIR/data/secrets:/app/secrets" --entrypoint python "$APP_IMAGE" - <<'PY'
 from pathlib import Path

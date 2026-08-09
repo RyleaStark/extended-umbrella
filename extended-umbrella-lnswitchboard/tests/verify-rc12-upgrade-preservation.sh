@@ -3,7 +3,7 @@ set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 RC12_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc12@sha256:7b6bc8e30e5b1ccf5cc11ee764d0503ada7717945f2f02913b2b3404dabb8561'
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
 FIXTURE=$(mktemp -d)
 PROJECT="lns-upgrade-${RANDOM}-$$"
 
@@ -127,7 +127,7 @@ asyncio.run(LNAddressStore(path).add_address(
 ))
 with sqlite3.connect(path) as db:
     assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
-print('GREEN rc12_records_survive_rc21_package_upgrade')
+print('GREEN rc12_records_survive_rc22_package_upgrade')
 PY
 
 EXPECTED_SOURCE="$APP_DATA/data/secrets"

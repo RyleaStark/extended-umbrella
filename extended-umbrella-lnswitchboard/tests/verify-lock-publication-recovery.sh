@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
 FIXTURE=$(mktemp -d)
 cleanup() {
   docker run --rm -v "$FIXTURE:/fixture" alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 sh -c 'rm -rf /fixture/* /fixture/.[!.]* /fixture/..?*' >/dev/null 2>&1 || true
@@ -37,7 +37,7 @@ for case in before_write partial_write; do
   mkdir -p "$root"
   chmod 0775 "$root"
   status=0
-  docker run --rm --network none --read-only --cap-drop ALL \
+  docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
     --cap-add CHOWN --cap-add DAC_OVERRIDE --cap-add FOWNER \
     --security-opt no-new-privileges:true \
     -v "$root:/app-data" -v "$PACKAGE_DIR/hooks/state-migrate.py:/opt/state-migrate.py:ro" \
@@ -48,7 +48,7 @@ for case in before_write partial_write; do
   [ -f "$root/.lnswitchboard-state-lock-v1.tmp" ]
   [ "$(stat -c '%u:%g:%a' "$root/.lnswitchboard-state-lock-v1.tmp")" = '0:0:600' ]
   for rerun in 1 2; do
-    docker run --rm --network none --read-only --cap-drop ALL \
+    docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
       --cap-add CHOWN --cap-add DAC_OVERRIDE --cap-add FOWNER \
       --security-opt no-new-privileges:true \
       -v "$root:/app-data" -v "$PACKAGE_DIR/hooks/state-migrate.py:/opt/state-migrate.py:ro" \

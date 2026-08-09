@@ -70,7 +70,7 @@ assert tailscale['environment']['TS_NO_LOGS_NO_SUPPORT'] == 'true'
 print('GREEN fresh_install_render_contract_ok')
 PY
 
-compose up -d init lnswitchboard tailscale
+compose up -d lnswitchboard tailscale
 
 for _ in $(seq 1 45); do
   web_health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${APP_ID}_web" 2>/dev/null || true)
@@ -81,7 +81,47 @@ done
 [ "$web_health" = healthy ]
 [ "$ts_health" = healthy ]
 
-# Exercise Umbrel-proxy-shaped requests against the actual RC21 listener.
+docker exec -i "${APP_ID}_public" python - <<'PY'
+from pathlib import Path
+import urllib.error
+import urllib.request
+
+secrets = Path('/app/secrets')
+assert not any(path.is_file() or path.is_socket() for path in secrets.rglob('*'))
+assert not Path('/lnd').exists()
+mountinfo = Path('/proc/self/mountinfo').read_text(encoding='utf-8')
+assert ' /app/secrets ' not in mountinfo
+assert ' /lnd ' not in mountinfo
+assert Path('/run/lnswitchboard-public/public.sock').is_socket()
+for path in ('/api/health', '/api/connections'):
+    try:
+        urllib.request.urlopen('http://127.0.0.1:21212' + path, timeout=2)
+    except urllib.error.HTTPError as exc:
+        assert exc.code == 404, (path, exc.code)
+    else:
+        raise AssertionError(f'public gateway exposed administrative path {path}')
+try:
+    urllib.request.urlopen('http://127.0.0.1:22121/api/health', timeout=1)
+except urllib.error.URLError:
+    pass
+else:
+    raise AssertionError('administration listener shared the public network namespace')
+print('GREEN public_runtime_is_secretless_and_admin_is_unreachable')
+PY
+
+python3 - <<'PY'
+import urllib.error
+import urllib.request
+try:
+    urllib.request.urlopen('http://127.0.0.1:21212/api/health', timeout=2)
+except urllib.error.HTTPError as exc:
+    assert exc.code == 404, exc.code
+else:
+    raise AssertionError('public health contract unexpectedly exposed an admin success')
+print('GREEN host_publication_reaches_only_the_public_gateway')
+PY
+
+# Exercise Umbrel-proxy-shaped requests against the actual RC22 admin listener.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import urllib.request
 headers = {

@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc21-umbrel.1"
+version: "0.4.0.rc22-umbrel.1"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  Preserves historical and interim records across upgrades, rollbacks, and re-upgrades with a durable manifest that binds each database, key, sidecar, and archive before cleanup. RC20 adds application-owned cross-platform OAuth callback and logging privacy, idempotent webhook-history redaction, authenticated Umbrel proxy mode with silent-log defense in depth, exact LND mounts, and isolated Mesh and Tailscale runtimes. Remote Cloudflare OAuth and Mesh remain fail-closed until a real HTTPS fragment callback page, OAuth client, and Mesh authorization are explicitly provisioned.
+  Preserves historical and interim records across upgrades, rollbacks, and re-upgrades with a durable manifest binding every database, key, SQLite sidecar, and archive. RC22 separates the authenticated administration service from a bounded secretless public gateway connected over a hardened Unix socket; only port 21212 reaches public LNURL and NIP-05 routes, while LND credentials, provider secrets, and operational state remain confined to the administration process. Cloudflare Mesh and Tailscale Funnel attach only to the public listener. Remote Cloudflare OAuth and Mesh remain fail-closed until a real HTTPS fragment callback page, OAuth client, and Mesh authorization are explicitly provisioned.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

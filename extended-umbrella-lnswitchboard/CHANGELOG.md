@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0.rc22-umbrel.1 — 2026-08-09
+
+- Pin lnSwitchboard RC22 by immutable multi-architecture OCI index digest.
+- Split the administration and public listeners into separate least-privilege containers joined only by a hardened Unix socket.
+- Keep operational SQLite, LND macaroons, provider credentials, and connector state out of the Internet-facing public process.
+- Route Cloudflare Mesh and Tailscale Funnel only through the bounded public listener on port 21212.
+- Preserve the rollback-compatible historical database/key authority and transactional migration recovery.
+- Verify every privileged writable bind mount by descriptor identity against a read-only host view before initialization, and publish the App Proxy privacy override atomically.
+- Avoid rollback compatibility links for transient SQLite journal/WAL/SHM files and retire legacy links only when a validated schema-v2 marker and digest-matched archive bind that exact sidecar, so RC21 rollback/re-upgrade cannot strand a dangling journal path.
+- Recover bounded, root-owned App Proxy privacy-config publication temporaries after interruption while rejecting symlinks, hardlinks, malformed names, metadata, and content.
+
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
 ## 0.4.0.rc21-umbrel.1 — 2026-08-09

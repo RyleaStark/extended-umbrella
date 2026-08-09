@@ -35,10 +35,21 @@ MARKER_TEMP = ROOT / ".lnswitchboard-state-migration-v1.tmp"
 LOCK = ROOT / ".lnswitchboard-state-lock-v1.json"
 LOCK_TEMP = ROOT / ".lnswitchboard-state-lock-v1.tmp"
 PROXY_CONFIG = ROOT / "proxy-config"
+PUBLIC_BACKEND = ROOT / "public-backend"
+HOST_VIEW = Path("/host-view")
+PRIVILEGED_MOUNT_SOURCES = (
+    Path("secrets"),
+    Path("secrets/tailscale"),
+    Path("connectors"),
+    Path("connectors/cloudflare-mesh"),
+    Path("connectors/cloudflare-mesh-state"),
+    Path("connectors/tailscale"),
+)
 EXCLUDED = {
     "secrets",
     "connectors",
     "proxy-config",
+    "public-backend",
     STAGE.name,
     BACKUP.name,
     MARKER.name,
@@ -48,6 +59,14 @@ EXCLUDED = {
 }
 AT_FDCWD = -100
 RENAME_NOREPLACE = 1
+TRANSIENT_SQLITE_COMPATIBILITY_NAMES = {
+    "lnswitchboard.db-journal",
+    "lnswitchboard.db-wal",
+    "lnswitchboard.db-shm",
+}
+APP_PROXY_ENV = b"LOG_LEVEL=silent\nPROXY_AUTH_WHITELIST=\n"
+APP_PROXY_TEMP_PREFIX = "app-proxy.env.tmp."
+APP_PROXY_LEGACY_TEMP_NAME = "app-proxy.env.tmp"
 
 
 def fail(message: str) -> NoReturn:
@@ -503,7 +522,132 @@ def is_trusted_partial_migration(
     )
 
 
+def remove_owned_proxy_temporaries() -> None:
+    """Remove only bounded guard-generated proxy publication temporaries."""
+    directory_fd = os.open(
+        PROXY_CONFIG,
+        os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+    )
+    changed = False
+    try:
+        for name in sorted(os.listdir(directory_fd)):
+            if name == APP_PROXY_LEGACY_TEMP_NAME:
+                expected_modes = {0o600}
+            elif name.startswith(APP_PROXY_TEMP_PREFIX):
+                suffix = name[len(APP_PROXY_TEMP_PREFIX) :]
+                if not suffix.isdigit() or int(suffix) <= 0 or str(int(suffix)) != suffix:
+                    continue
+                expected_modes = {0o600, 0o444}
+            else:
+                continue
+            try:
+                initial = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                fail("an App Proxy publication temporary changed during validation")
+            if (
+                not stat.S_ISREG(initial.st_mode)
+                or (initial.st_uid, initial.st_gid) != (0, 0)
+                or initial.st_nlink != 1
+                or stat.S_IMODE(initial.st_mode) not in expected_modes
+                or initial.st_size > len(APP_PROXY_ENV)
+            ):
+                fail("an App Proxy publication temporary has unsafe metadata")
+            flags = os.O_RDONLY
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            descriptor = os.open(name, flags, dir_fd=directory_fd)
+            try:
+                opened = os.fstat(descriptor)
+                if (opened.st_dev, opened.st_ino) != (initial.st_dev, initial.st_ino):
+                    fail("an App Proxy publication temporary changed during validation")
+                chunks: list[bytes] = []
+                remaining = initial.st_size
+                while remaining:
+                    chunk = os.read(descriptor, remaining)
+                    if not chunk:
+                        fail("an App Proxy publication temporary changed during validation")
+                    chunks.append(chunk)
+                    remaining -= len(chunk)
+                if os.read(descriptor, 1):
+                    fail("an App Proxy publication temporary changed during validation")
+                payload = b"".join(chunks)
+                after_read = os.fstat(descriptor)
+                if (
+                    after_read.st_size != initial.st_size
+                    or after_read.st_mtime_ns != initial.st_mtime_ns
+                    or after_read.st_ctime_ns != initial.st_ctime_ns
+                ):
+                    fail("an App Proxy publication temporary changed during validation")
+                if not APP_PROXY_ENV.startswith(payload):
+                    fail("an App Proxy publication temporary has unexpected content")
+            finally:
+                os.close(descriptor)
+            try:
+                current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                fail("an App Proxy publication temporary changed during validation")
+            if (current.st_dev, current.st_ino) != (initial.st_dev, initial.st_ino):
+                fail("an App Proxy publication temporary changed during validation")
+            os.unlink(name, dir_fd=directory_fd)
+            changed = True
+        if changed:
+            os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
 def validate_reserved_paths() -> None:
+    if HOST_VIEW.exists():
+        host_root_stat = HOST_VIEW.stat()
+        migration_root_stat = ROOT.stat()
+        if (host_root_stat.st_dev, host_root_stat.st_ino) != (
+            migration_root_stat.st_dev,
+            migration_root_stat.st_ino,
+        ):
+            fail("the read-only host view does not match the migration root")
+        for relative in PRIVILEGED_MOUNT_SOURCES:
+            source = HOST_VIEW / relative
+            if source.is_symlink():
+                fail(f"the reserved writable mount source {relative} is a symlink")
+            if not source.exists():
+                continue
+            source_stat = source.lstat()
+            if not stat.S_ISDIR(source_stat.st_mode):
+                fail(f"the reserved writable mount source {relative} is not a directory")
+            # The state migrator itself validates and normalizes the canonical
+            # secrets root.  Only its alias/type is checked here so historical
+            # layouts can be repaired before the privileged initializer runs.
+            if relative == Path("secrets"):
+                continue
+            ownership = (source_stat.st_uid, source_stat.st_gid)
+            mode = stat.S_IMODE(source_stat.st_mode)
+            if (
+                ownership not in {(0, 0), (1000, 1000)}
+                or mode & 0o002
+                or (ownership == (0, 0) and mode & 0o020)
+            ):
+                fail(f"the reserved writable mount source {relative} is not trusted")
+    if PUBLIC_BACKEND.is_symlink():
+        fail("the reserved public backend path has an unexpected type")
+    if PUBLIC_BACKEND.exists():
+        backend_stat = PUBLIC_BACKEND.lstat()
+        if not stat.S_ISDIR(backend_stat.st_mode) or (
+            backend_stat.st_uid,
+            backend_stat.st_gid,
+            stat.S_IMODE(backend_stat.st_mode),
+        ) not in {(0, 0, 0o755), (1000, 1000, 0o700)}:
+            fail("the reserved public backend path is not trusted")
+        entries = list(PUBLIC_BACKEND.iterdir())
+        if entries:
+            if len(entries) != 1 or entries[0].name != "public.sock":
+                fail("the reserved public backend path contains an unexpected entry")
+            socket_stat = entries[0].lstat()
+            if (
+                not stat.S_ISSOCK(socket_stat.st_mode)
+                or socket_stat.st_uid != 1000
+                or socket_stat.st_gid != 1000
+            ):
+                fail("the reserved public backend socket is not trusted")
     if PROXY_CONFIG.is_symlink():
         fail("the reserved App Proxy configuration path has an unexpected type")
     if PROXY_CONFIG.exists():
@@ -515,17 +659,17 @@ def validate_reserved_paths() -> None:
             or stat.S_IMODE(config_stat.st_mode) != 0o755
         ):
             fail("the reserved App Proxy configuration path is not trusted")
+        remove_owned_proxy_temporaries()
         for child in PROXY_CONFIG.iterdir():
-            if child.name not in {"app-proxy.env", "app-proxy.env.tmp"} or child.is_symlink():
+            if child.name != "app-proxy.env" or child.is_symlink():
                 fail("the reserved App Proxy configuration contains an unexpected entry")
             child_stat = child.lstat()
-            expected_mode = 0o444 if child.name == "app-proxy.env" else 0o600
             if (
                 not stat.S_ISREG(child_stat.st_mode)
                 or child_stat.st_uid != 0
                 or child_stat.st_gid != 0
                 or child_stat.st_nlink != 1
-                or stat.S_IMODE(child_stat.st_mode) != expected_mode
+                or stat.S_IMODE(child_stat.st_mode) != 0o444
             ):
                 fail("the reserved App Proxy configuration entry is not trusted")
         configured = PROXY_CONFIG / "app-proxy.env"
@@ -570,9 +714,61 @@ def is_compatibility_link(path: Path) -> bool:
     return Path(os.readlink(path)) == Path("secrets") / path.name
 
 
-def ensure_compatibility_links() -> None:
+def remove_transient_compatibility_links(marker: dict[str, Any] | None) -> None:
+    """Remove only generated links bound by durable migration authority."""
+    root_fd = os.open(ROOT, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    validated: list[tuple[str, os.stat_result]] = []
+    try:
+        for name in sorted(TRANSIENT_SQLITE_COMPATIBILITY_NAMES):
+            try:
+                initial = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISLNK(initial.st_mode):
+                continue
+            if initial.st_nlink != 1:
+                fail("a transient compatibility link has an unsafe link count")
+            try:
+                target = Path(os.readlink(name, dir_fd=root_fd))
+            except OSError:
+                fail("a transient compatibility link changed during validation")
+            if target != Path("secrets") / name:
+                fail("a transient compatibility link has an unexpected target")
+            if marker is None or marker.get("schema") != 2:
+                fail("a transient compatibility link lacks durable migration authority")
+            authority = marker.get("authorities", {}).get(name)
+            if not isinstance(authority, dict):
+                fail("a transient compatibility link lacks durable migration authority")
+            archived = BACKUP / authority["archive_name"]
+            if not archived.exists() or archived.is_symlink():
+                fail("a transient compatibility link lacks its bound archive authority")
+            verify_state_digest(
+                archived,
+                authority["sha256"],
+                "transient compatibility archive authority",
+            )
+            validated.append((name, initial))
+        for name, initial in validated:
+            try:
+                current = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                fail("a transient compatibility link changed during validation")
+            if (current.st_dev, current.st_ino) != (initial.st_dev, initial.st_ino):
+                fail("a transient compatibility link changed during validation")
+        for name, _initial in validated:
+            os.unlink(name, dir_fd=root_fd)
+        if validated:
+            os.fsync(root_fd)
+    finally:
+        os.close(root_fd)
+
+
+def ensure_compatibility_links(marker: dict[str, Any] | None) -> None:
     """Keep interim root mounts pointed at the canonical live state."""
+    remove_transient_compatibility_links(marker)
     for canonical_entry in CANONICAL.iterdir():
+        if canonical_entry.name in TRANSIENT_SQLITE_COMPATIBILITY_NAMES:
+            continue
         link = ROOT / canonical_entry.name
         if link.is_symlink():
             if not is_compatibility_link(link):
@@ -971,7 +1167,7 @@ def execute_prepared_transaction(payload: dict[str, Any]) -> None:
         if not authority.exists():
             fail("the durable transaction is missing a canonical authority")
         verify_state_digest(authority, record["sha256"], "canonical archive authority")
-    ensure_compatibility_links()
+    ensure_compatibility_links(prepared)
     remove_owned_stage()
     fsync_directory(ROOT)
     completed = dict(prepared)
@@ -1117,6 +1313,7 @@ def _main_locked() -> None:
         execute_prepared_transaction(marker)
         print("lnSwitchboard state migration: resumed durable prepared transaction")
         return
+    remove_transient_compatibility_links(marker)
     marker_names = (
         list(marker.get("managed_entries") or marker.get("migrated_entries") or [])
         if marker is not None
@@ -1167,7 +1364,7 @@ def _main_locked() -> None:
                 record_complete_canonical_snapshot()
             normalize_app_ownership(CANONICAL)
             remove_owned_stage()
-            ensure_compatibility_links()
+            ensure_compatibility_links(read_marker())
             if marker is not None and marker["schema"] == 1:
                 record_complete_canonical_snapshot()
         elif STAGE.exists():
