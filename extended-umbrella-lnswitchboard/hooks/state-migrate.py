@@ -33,6 +33,7 @@ BACKUP = ROOT / ".lnswitchboard-state-backup-v1"
 MARKER = ROOT / ".lnswitchboard-state-migration-v1.json"
 MARKER_TEMP = ROOT / ".lnswitchboard-state-migration-v1.tmp"
 LOCK = ROOT / ".lnswitchboard-state-lock-v1.json"
+LOCK_TEMP = ROOT / ".lnswitchboard-state-lock-v1.tmp"
 PROXY_CONFIG = ROOT / "proxy-config"
 EXCLUDED = {
     "secrets",
@@ -43,6 +44,7 @@ EXCLUDED = {
     MARKER.name,
     MARKER_TEMP.name,
     LOCK.name,
+    LOCK_TEMP.name,
 }
 AT_FDCWD = -100
 RENAME_NOREPLACE = 1
@@ -51,6 +53,26 @@ RENAME_NOREPLACE = 1
 def fail(message: str) -> NoReturn:
     print(f"lnSwitchboard state migration refused: {message}", file=sys.stderr)
     raise SystemExit(65)
+
+
+def write_all(descriptor: int, payload: bytes) -> None:
+    """Write every byte or fail without treating a short write as durable."""
+    remaining = memoryview(payload)
+    while remaining:
+        written = os.write(descriptor, remaining)
+        if written <= 0:
+            raise OSError(errno.EIO, "write returned no progress")
+        remaining = remaining[written:]
+
+
+def unique_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Reject duplicate authority keys instead of silently keeping the last."""
+    parsed: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in parsed:
+            raise ValueError("duplicate JSON object key")
+        parsed[key] = value
+    return parsed
 
 
 @contextmanager
@@ -80,7 +102,9 @@ def protected_root() -> Iterator[None]:
                 fail("the migration lock metadata is not trusted")
             payload = os.read(lock_fd, 4096)
             try:
-                parsed = json.loads(payload.decode("utf-8"))
+                parsed = json.loads(
+                    payload.decode("utf-8"), object_pairs_hook=unique_json_object
+                )
                 original = {
                     "uid": int(parsed["uid"]),
                     "gid": int(parsed["gid"]),
@@ -94,15 +118,40 @@ def protected_root() -> Iterator[None]:
                 "gid": int(root_stat.st_gid),
                 "mode": int(stat.S_IMODE(root_stat.st_mode)),
             }
+            try:
+                temporary_stat = os.stat(
+                    LOCK_TEMP.name,
+                    dir_fd=root_fd,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                temporary_stat = None
+            if temporary_stat is not None:
+                if (
+                    not stat.S_ISREG(temporary_stat.st_mode)
+                    or temporary_stat.st_uid != 0
+                    or temporary_stat.st_gid != 0
+                    or stat.S_IMODE(temporary_stat.st_mode) != 0o600
+                    or temporary_stat.st_nlink != 1
+                ):
+                    fail("the temporary migration lock metadata is not trusted")
+                os.unlink(LOCK_TEMP.name, dir_fd=root_fd)
+                os.fsync(root_fd)
             lock_fd = os.open(
-                LOCK.name,
+                LOCK_TEMP.name,
                 os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
                 0o600,
                 dir_fd=root_fd,
             )
             payload = (json.dumps(original, sort_keys=True) + "\n").encode("utf-8")
-            os.write(lock_fd, payload)
+            write_all(lock_fd, payload)
             os.fsync(lock_fd)
+            try:
+                rename_noreplace(LOCK_TEMP, LOCK)
+            except FileExistsError:
+                os.unlink(LOCK_TEMP.name, dir_fd=root_fd)
+                os.fsync(root_fd)
+                fail("the migration lock appeared during publication")
             os.fsync(root_fd)
 
         assert original is not None
@@ -501,6 +550,7 @@ def validate_reserved_paths() -> None:
         (MARKER, "marker"),
         (MARKER_TEMP, "temporary marker"),
         (LOCK, "lock metadata"),
+        (LOCK_TEMP, "temporary lock metadata"),
     ):
         if path.is_symlink():
             fail(f"the reserved {label} path has an unexpected type")
@@ -627,14 +677,28 @@ def validate_transaction_marker(payload: dict[str, Any]) -> dict[str, Any]:
     validated_authorities = validate_records(authorities, authority=True)
     validated_archives = validate_records(archives, authority=False)
     claimed_archives: dict[str, tuple[str, str]] = {}
-    for name, record in validated_authorities.items():
-        claimed_archives[record["archive_name"]] = (name, record["sha256"])
+    claimed_temporaries: set[str] = set()
+    for index, name in enumerate(sorted(validated_authorities)):
+        record = validated_authorities[name]
+        archive_name = record["archive_name"]
+        if archive_name in claimed_archives:
+            fail("the migration marker reuses an archive destination")
+        claimed_archives[archive_name] = (name, record["sha256"])
+        temporary_name = record["temp_name"]
+        expected_temporary = f".txn-{transaction_id}-{index}.tmp"
+        if temporary_name != expected_temporary:
+            fail("the migration marker contains an unbound snapshot name")
+        if temporary_name in claimed_temporaries:
+            fail("the migration marker reuses a snapshot name")
+        claimed_temporaries.add(temporary_name)
     for name, record in validated_archives.items():
         claim = (name, record["sha256"])
         existing = claimed_archives.get(record["archive_name"])
         if existing is not None and existing != claim:
             fail("the migration marker reuses an archive destination")
         claimed_archives[record["archive_name"]] = claim
+    if claimed_temporaries & claimed_archives.keys():
+        fail("the migration marker overlaps archive and snapshot names")
     return {
         "schema": 2,
         "transaction_id": transaction_id,
@@ -650,8 +714,11 @@ def read_marker() -> dict[str, Any] | None:
     if not MARKER.exists():
         return None
     try:
-        payload = json.loads(MARKER.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        payload = json.loads(
+            MARKER.read_text(encoding="utf-8"),
+            object_pairs_hook=unique_json_object,
+        )
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
         fail("the migration marker is invalid")
     if not isinstance(payload, dict):
         fail("the migration marker is invalid")
@@ -676,7 +743,7 @@ def write_marker_payload(payload: dict[str, Any]) -> None:
     fsync_directory(ROOT)
 
 
-def backup_candidate(name: str) -> Path | None:
+def backup_candidate(name: str, *, require_unique: bool = False) -> Path | None:
     if not ensure_backup_directory(create=False):
         return None
     candidates: list[tuple[int, Path]] = []
@@ -691,6 +758,11 @@ def backup_candidate(name: str) -> Path | None:
                 candidates.append((int(suffix), candidate))
     if not candidates:
         return None
+    if require_unique and len(candidates) != 1:
+        fail(
+            "legacy migration metadata does not bind a unique archived "
+            f"generation for {name}"
+        )
     selected = max(candidates, key=lambda item: item[0])[1]
     validate_tree(selected)
     return selected
@@ -995,7 +1067,7 @@ def recover_legacy_archived_transaction(marker_names: list[str]) -> bool:
         return False
     selected: dict[str, Path] = {}
     for name in marker_names:
-        candidate = backup_candidate(name)
+        candidate = backup_candidate(name, require_unique=True)
         if candidate is None:
             fail("migration metadata exists but archived state is incomplete")
         selected[name] = candidate
