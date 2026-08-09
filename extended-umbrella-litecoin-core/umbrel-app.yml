@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-core
 category: bitcoin
 name: "Litecoin Core"
-version: "0.21.5.5-umbrel.5"
+version: "0.21.5.5-umbrel.6"
 tagline: "Run your personal Litecoin node"
 
 description: >-
@@ -11,9 +11,8 @@ description: >-
 
   The node uses the official Litecoin Core v0.21.5.5 image, pinned by immutable digest. Its Umbrel UI is a Litecoin-specific adaptation of Umbrel's Bitcoin Node interface with silver Litecoin branding.
 releaseNotes: >-
-  Completes Litecoin blue and silver propagation across shared theme tokens, charts,
-  active controls, keyboard focus states, and browser/PWA metadata; the runtime remains
-  Litecoin Core v0.21.5.5.
+  Adds native umbrelOS desktop widgets for live Litecoin node statistics and blockchain
+  synchronization progress; the runtime remains Litecoin Core v0.21.5.5.
 
 developer: Litecoin Project and RyleaStark
 website: https://litecoin.org
@@ -29,6 +28,40 @@ path: ""
 
 defaultUsername: ""
 defaultPassword: ""
+widgets:
+  - id: "stats"
+    type: "four-stats"
+    refresh: "5s"
+    endpoint: "app:3000/api/widget/stats"
+    link: ""
+    example:
+      type: "four-stats"
+      link: ""
+      items:
+        - title: "Connections"
+          text: "11"
+          subtext: "peers"
+        - title: "Mempool"
+          text: "24"
+          subtext: "MB"
+        - title: "Hashrate"
+          text: "2"
+          subtext: "PH/s"
+        - title: "Blockchain size"
+          text: "140"
+          subtext: "GB"
+  - id: "sync"
+    type: "text-with-progress"
+    refresh: "2s"
+    endpoint: "app:3000/api/widget/sync"
+    link: ""
+    example:
+      type: "text-with-progress"
+      link: ""
+      title: "Blockchain sync"
+      text: "83%"
+      progressLabel: "In progress"
+      progress: 0.83
 backupIgnore:
   - data/litecoin/blocks
   - data/litecoin/chainstate
