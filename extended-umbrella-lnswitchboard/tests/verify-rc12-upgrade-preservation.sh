@@ -16,8 +16,8 @@ printf 'fixture certificate\n' > "$LND_DATA/tls.cert"
 printf '00\n' > "$LND_DATA/data/chain/bitcoin/mainnet/invoice.macaroon"
 printf '00\n' > "$LND_DATA/data/chain/bitcoin/mainnet/readonly.macaroon"
 
-# Seed the database as root, matching the exact RC12 package runtime user.
-docker run --rm -i --platform linux/arm64 \
+# Seed the database as UID/GID 1000, matching the exact RC12 package runtime.
+docker run --rm -i --platform linux/arm64 --user 1000:1000 \
   -v "$APP_DATA/data/secrets:/app/secrets" \
   --entrypoint python "$RC12_IMAGE" - <<'PY'
 import asyncio
