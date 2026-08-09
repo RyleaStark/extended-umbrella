@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  Preserves historical and interim records across upgrades, rollbacks, and re-upgrades with a durable manifest that binds each database, key, sidecar, and archive before cleanup. RC20 adds application-owned cross-platform OAuth callback and logging privacy, idempotent webhook-history redaction, authenticated Umbrel proxy mode with silent-log defense in depth, exact LND mounts, and isolated Mesh and Tailscale runtimes.
+  Preserves historical and interim records across upgrades, rollbacks, and re-upgrades with a durable manifest that binds each database, key, sidecar, and archive before cleanup. RC20 adds application-owned cross-platform OAuth callback and logging privacy, idempotent webhook-history redaction, authenticated Umbrel proxy mode with silent-log defense in depth, exact LND mounts, and isolated Mesh and Tailscale runtimes. Remote Cloudflare OAuth and Mesh remain fail-closed until a real HTTPS fragment callback page, OAuth client, and Mesh authorization are explicitly provisioned.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

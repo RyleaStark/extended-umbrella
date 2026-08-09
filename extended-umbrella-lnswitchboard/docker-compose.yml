@@ -99,7 +99,7 @@ services:
       CLOUDFLARED_ORIGIN_URL: "http://lnswitchboard:21212"
       CLOUDFLARE_OAUTH_CLIENT_ID: "${CLOUDFLARE_OAUTH_CLIENT_ID:-}"
       CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK: "${CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
-      CLOUDFLARE_OAUTH_REDIRECT_PAGE: "${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://oauth.lnswitchboard.app/callback/}"
+      CLOUDFLARE_OAUTH_REDIRECT_PAGE: "${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://placeholder.invalid/oauth/callback}"
       TAILSCALE_CONNECTOR_ENABLED: "true"
       TAILSCALE_CONTROL_DIR: "/app/secrets/tailscale/control"
       TAILSCALE_STATUS_DIR: "/app/secrets/tailscale/status"

@@ -30,6 +30,9 @@ assert '${BITCOIN_NETWORK}' not in (root / 'docker-compose.yml').read_text(encod
 assert app['environment']['LND_HOST'] == '${APP_LIGHTNING_NODE_IP}'
 assert app['environment']['DEP_ENV'] == 'UMBREL'
 assert app['environment']['TRUSTED_HOSTS'] == '*'
+assert app['environment']['CLOUDFLARE_OAUTH_REDIRECT_PAGE'] == (
+    '${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://placeholder.invalid/oauth/callback}'
+)
 proxy = compose['services']['app_proxy']
 assert proxy['environment']['LOG_LEVEL'] == 'silent'
 assert 'PROXY_AUTH_WHITELIST' not in proxy['environment']
