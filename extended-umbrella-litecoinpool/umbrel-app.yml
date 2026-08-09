@@ -21,7 +21,8 @@ repo: https://github.com/RyleaStark/umbrel-litecoinspace
 support: https://github.com/RyleaStark/umbrel-litecoinspace/issues
 port: 3012
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoinpool/gallery/icon.svg
-gallery: []
+gallery:
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoinpool/gallery/1.jpg
 path: ""
 defaultUsername: ""
 defaultPassword: ""
