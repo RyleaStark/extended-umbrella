@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -12,10 +12,10 @@ import re, sys, yaml
 root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
-assert manifest['version'] == '0.4.0.rc20-umbrel.1'
+assert manifest['version'] == '0.4.0.rc21-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc20@sha256:8d5524bfbebc1f2c8c16af25d8ef4b5f888577c8644d727e9dd8efd0395224c6'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 mesh = compose['services']['cloudflare-mesh']
 assert mesh['image'] == 'cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
@@ -69,7 +69,7 @@ for pattern in (r'(?i)password\s*[:=]\s*["\']?[^$\s{]', r'(?i)(access|refresh|me
 print('GREEN static_package_security_and_persistence_contract_ok')
 PY
 
-# Validate every application environment key against the exact RC20 Settings model.
+# Validate every application environment key against the exact RC21 Settings model.
 docker run --rm -i --platform linux/arm64 \
   -v "$PACKAGE_DIR/docker-compose.yml:/package/docker-compose.yml:ro" \
   --entrypoint python "$APP_IMAGE" - <<'PY'
@@ -91,7 +91,7 @@ for name, field in Settings.model_fields.items():
 compose = yaml.safe_load(Path('/package/docker-compose.yml').read_text(encoding='utf-8'))
 keys = set(compose['services']['lnswitchboard']['environment'])
 unknown = sorted(keys - allowed)
-assert not unknown, f'RC20 ignores package environment keys: {unknown}'
+assert not unknown, f'RC21 ignores package environment keys: {unknown}'
 invalid_redirects = {
     'CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK': [
         'https://admin.example/api/cloudflare/oauth/callback',
@@ -110,14 +110,14 @@ for env_name, values in invalid_redirects.items():
         except ValidationError:
             pass
         else:
-            raise AssertionError(f'RC20 accepted unsafe OAuth redirect {env_name}={value}')
+            raise AssertionError(f'RC21 accepted unsafe OAuth redirect {env_name}={value}')
     os.environ.pop(env_name, None)
-print('GREEN exact_rc20_settings_and_portable_oauth_contract_ok')
+print('GREEN exact_rc21_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = 'ef3e3354f0944844d12c48f10b2b2a88decb22fd' ]
-echo 'GREEN exact_rc20_source_revision_ok'
+[ "$app_revision" = '8369b7305a9300ed10d23af7be96be4434718bf6' ]
+echo 'GREEN exact_rc21_source_revision_ok'
 
 docker run --rm -i \
   -e DEP_ENV=DOCKER \
@@ -158,7 +158,7 @@ async def status_for(client):
 assert asyncio.run(status_for('203.0.113.25')) == 403
 assert asyncio.run(status_for('192.168.50.25')) == 200
 PY
-printf 'GREEN exact_rc20_generic_docker_admin_boundary_is_application_owned\n'
+printf 'GREEN exact_rc21_generic_docker_admin_boundary_is_application_owned\n'
 
 for image in "$APP_IMAGE" "$TAILSCALE_IMAGE" "$MESH_IMAGE"; do
   output=$(docker buildx imagetools inspect "$image")

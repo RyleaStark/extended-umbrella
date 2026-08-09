@@ -2,6 +2,16 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc21-umbrel.1 — 2026-08-09
+
+### Fixed
+
+- Pins the immutable multi-platform RC21 image built from merged source `8369b7305a9300ed10d23af7be96be4434718bf6` at OCI index `sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765` for both migration and application services.
+- Enforces byte-for-byte canonical OAuth callbacks before production listeners open, including WHATWG numeric-host, malformed IDNA, authority, port, path, delimiter, Unicode, and browser-normalization rejection.
+- Keeps webhook payloads, destinations, signing material, payer data, payment requests, preimages, remote bodies, raw exceptions, and payload-derived identity fields out of operator history while reconstructing stable retries from current authoritative invoice/address state.
+- Applies configured retention to terminal invoice and webhook history without deleting pending retry authority, and creates or repairs SQLite, macaroon, connection-key, and Nostr signer files with owner-only permissions.
+- Refreshes durable migration recovery authorities after rollback/re-upgrade so a completed marker cannot restore a stale credential generation.
+
 ## 0.4.0.rc20-umbrel.1 — 2026-08-08
 
 ### Fixed

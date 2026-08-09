@@ -81,7 +81,7 @@ done
 [ "$web_health" = healthy ]
 [ "$ts_health" = healthy ]
 
-# Exercise Umbrel-proxy-shaped requests against the actual RC20 listener.
+# Exercise Umbrel-proxy-shaped requests against the actual RC21 listener.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import urllib.request
 headers = {
@@ -120,7 +120,7 @@ for secret in "$callback_code" "$callback_state"; do
 done
 printf 'GREEN application_runtime_logs_redact_loopback_query_without_app_proxy\n'
 
-# Seed through RC20, remove both runtime containers, recreate them, and prove
+# Seed through RC21, remove both runtime containers, recreate them, and prove
 # the persisted database remains intact rather than living in a container layer.
 docker exec -i "${APP_ID}_web" python - <<'PY'
 import asyncio
