@@ -69,6 +69,7 @@ TRANSIENT_SQLITE_COMPATIBILITY_NAMES = {
 APP_PROXY_ENV = b"LOG_LEVEL=silent\nPROXY_AUTH_WHITELIST=\n"
 APP_PROXY_TEMP_PREFIX = ".app-proxy.env.tmp."
 APP_PROXY_LEGACY_TEMP_NAME = "app-proxy.env.tmp"
+APP_PROXY_RETIRE_NAME = ".app-proxy-temp-retire-v1"
 
 
 def fail(message: str) -> NoReturn:
@@ -536,76 +537,179 @@ def is_trusted_partial_migration(
 
 
 def remove_owned_proxy_temporaries() -> None:
-    """Remove only bounded guard-generated proxy publication temporaries."""
+    """Retire bounded guard temporaries without unlinking mutable live paths."""
     directory_fd = os.open(
         PROXY_CONFIG,
         os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
     )
-    changed = False
-    try:
-        for name in sorted(os.listdir(directory_fd)):
-            if name == APP_PROXY_LEGACY_TEMP_NAME:
-                expected_modes = {0o600}
-            elif name.startswith(APP_PROXY_TEMP_PREFIX):
-                suffix = name[len(APP_PROXY_TEMP_PREFIX) :]
-                if not suffix.isdigit() or int(suffix) <= 0 or str(int(suffix)) != suffix:
-                    continue
-                expected_modes = {0o600, 0o444}
-            else:
-                continue
-            try:
-                initial = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
-            except FileNotFoundError:
-                fail("an App Proxy publication temporary changed during validation")
-            if (
-                not stat.S_ISREG(initial.st_mode)
-                or (initial.st_uid, initial.st_gid) != (0, 0)
-                or initial.st_nlink != 1
-                or stat.S_IMODE(initial.st_mode) not in expected_modes
-                or initial.st_size > len(APP_PROXY_ENV)
-            ):
-                fail("an App Proxy publication temporary has unsafe metadata")
-            flags = os.O_RDONLY
-            if hasattr(os, "O_NOFOLLOW"):
-                flags |= os.O_NOFOLLOW
-            descriptor = os.open(name, flags, dir_fd=directory_fd)
-            try:
-                opened = os.fstat(descriptor)
-                if (opened.st_dev, opened.st_ino) != (initial.st_dev, initial.st_ino):
-                    fail("an App Proxy publication temporary changed during validation")
-                chunks: list[bytes] = []
-                remaining = initial.st_size
-                while remaining:
-                    chunk = os.read(descriptor, remaining)
-                    if not chunk:
-                        fail("an App Proxy publication temporary changed during validation")
-                    chunks.append(chunk)
-                    remaining -= len(chunk)
-                if os.read(descriptor, 1):
-                    fail("an App Proxy publication temporary changed during validation")
-                payload = b"".join(chunks)
-                after_read = os.fstat(descriptor)
-                if (
-                    after_read.st_size != initial.st_size
-                    or after_read.st_mtime_ns != initial.st_mtime_ns
-                    or after_read.st_ctime_ns != initial.st_ctime_ns
-                ):
-                    fail("an App Proxy publication temporary changed during validation")
-                if not APP_PROXY_ENV.startswith(payload):
-                    fail("an App Proxy publication temporary has unexpected content")
-            finally:
+    retire_fd = -1
+    held: dict[str, tuple[str, int, os.stat_result]] = {}
+
+    def expected_modes(name: str) -> set[int] | None:
+        if name == APP_PROXY_LEGACY_TEMP_NAME:
+            return {0o600}
+        if not name.startswith(APP_PROXY_TEMP_PREFIX):
+            return None
+        suffix = name[len(APP_PROXY_TEMP_PREFIX) :]
+        if not suffix.isdigit() or int(suffix) <= 0 or str(int(suffix)) != suffix:
+            return None
+        return {0o600, 0o444}
+
+    def same_entry(expected: os.stat_result, current: os.stat_result) -> bool:
+        return (
+            expected.st_dev,
+            expected.st_ino,
+            expected.st_mode,
+            expected.st_uid,
+            expected.st_gid,
+            expected.st_nlink,
+            expected.st_size,
+            expected.st_mtime_ns,
+        ) == (
+            current.st_dev,
+            current.st_ino,
+            current.st_mode,
+            current.st_uid,
+            current.st_gid,
+            current.st_nlink,
+            current.st_size,
+            current.st_mtime_ns,
+        )
+
+    def open_validated(directory: int, name: str) -> tuple[int, os.stat_result]:
+        modes = expected_modes(name)
+        if modes is None:
+            fail("the App Proxy retirement path contains an unexpected entry")
+        try:
+            initial = os.stat(name, dir_fd=directory, follow_symlinks=False)
+        except FileNotFoundError:
+            fail("an App Proxy publication temporary changed during validation")
+        if (
+            not stat.S_ISREG(initial.st_mode)
+            or (initial.st_uid, initial.st_gid) != (0, 0)
+            or initial.st_nlink != 1
+            or stat.S_IMODE(initial.st_mode) not in modes
+            or initial.st_size > len(APP_PROXY_ENV)
+        ):
+            fail("an App Proxy publication temporary has unsafe metadata")
+        descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory)
+        opened = os.fstat(descriptor)
+        if not same_entry(initial, opened):
+            os.close(descriptor)
+            fail("an App Proxy publication temporary changed during validation")
+        chunks: list[bytes] = []
+        remaining = opened.st_size
+        while remaining:
+            chunk = os.read(descriptor, remaining)
+            if not chunk:
                 os.close(descriptor)
-            try:
-                current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
-            except FileNotFoundError:
                 fail("an App Proxy publication temporary changed during validation")
-            if (current.st_dev, current.st_ino) != (initial.st_dev, initial.st_ino):
-                fail("an App Proxy publication temporary changed during validation")
-            os.unlink(name, dir_fd=directory_fd)
-            changed = True
-        if changed:
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        if os.read(descriptor, 1):
+            os.close(descriptor)
+            fail("an App Proxy publication temporary changed during validation")
+        payload = b"".join(chunks)
+        after_read = os.fstat(descriptor)
+        if not same_entry(opened, after_read):
+            os.close(descriptor)
+            fail("an App Proxy publication temporary changed during validation")
+        if not APP_PROXY_ENV.startswith(payload):
+            os.close(descriptor)
+            fail("an App Proxy publication temporary has unexpected content")
+        return descriptor, after_read
+
+    try:
+        try:
+            retirement = os.stat(
+                APP_PROXY_RETIRE_NAME,
+                dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            retirement = None
+        if retirement is not None:
+            if (
+                not stat.S_ISDIR(retirement.st_mode)
+                or (retirement.st_uid, retirement.st_gid) != (0, 0)
+                or stat.S_IMODE(retirement.st_mode) != 0o700
+            ):
+                fail("the App Proxy retirement path is not trusted")
+            retire_fd = os.open(
+                APP_PROXY_RETIRE_NAME,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                dir_fd=directory_fd,
+            )
+
+        for name in sorted(os.listdir(directory_fd)):
+            if name == APP_PROXY_RETIRE_NAME or expected_modes(name) is None:
+                continue
+            descriptor, opened = open_validated(directory_fd, name)
+            held[name] = ("live", descriptor, opened)
+        if retire_fd >= 0:
+            for name in sorted(os.listdir(retire_fd)):
+                descriptor, opened = open_validated(retire_fd, name)
+                if name in held:
+                    os.close(descriptor)
+                    fail("an App Proxy temporary exists in two retirement locations")
+                held[name] = ("retired", descriptor, opened)
+
+        if any(location == "live" for location, _fd, _entry in held.values()):
+            if retire_fd < 0:
+                os.mkdir(APP_PROXY_RETIRE_NAME, mode=0o700, dir_fd=directory_fd)
+                os.fsync(directory_fd)
+                retire_fd = os.open(
+                    APP_PROXY_RETIRE_NAME,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=directory_fd,
+                )
+            for name, (location, descriptor, opened) in list(held.items()):
+                if location != "live":
+                    continue
+                rename_noreplace(
+                    PROXY_CONFIG / name,
+                    PROXY_CONFIG / APP_PROXY_RETIRE_NAME / name,
+                )
+                moved = os.stat(name, dir_fd=retire_fd, follow_symlinks=False)
+                current = os.fstat(descriptor)
+                if not same_entry(current, moved):
+                    rename_noreplace(
+                        PROXY_CONFIG / APP_PROXY_RETIRE_NAME / name,
+                        PROXY_CONFIG / name,
+                    )
+                    os.fsync(directory_fd)
+                    os.fsync(retire_fd)
+                    if not os.listdir(retire_fd):
+                        os.close(retire_fd)
+                        retire_fd = -1
+                        os.rmdir(APP_PROXY_RETIRE_NAME, dir_fd=directory_fd)
+                        os.fsync(directory_fd)
+                    fail("an App Proxy publication temporary changed during retirement")
+                held[name] = ("retired", descriptor, moved)
+            os.fsync(directory_fd)
+            os.fsync(retire_fd)
+
+        for name, (location, descriptor, moved) in held.items():
+            if location != "retired" or retire_fd < 0:
+                fail("an App Proxy publication temporary was not safely retired")
+            if not same_entry(os.fstat(descriptor), moved):
+                fail("an App Proxy publication temporary changed during retirement")
+            current = os.stat(name, dir_fd=retire_fd, follow_symlinks=False)
+            if not same_entry(moved, current):
+                fail("an App Proxy publication temporary changed during retirement")
+        for name in sorted(held):
+            unlink_private(retire_fd, name)
+        if retire_fd >= 0:
+            os.fsync(retire_fd)
+            os.close(retire_fd)
+            retire_fd = -1
+            os.rmdir(APP_PROXY_RETIRE_NAME, dir_fd=directory_fd)
             os.fsync(directory_fd)
     finally:
+        for _location, descriptor, _entry in held.values():
+            os.close(descriptor)
+        if retire_fd >= 0:
+            os.close(retire_fd)
         os.close(directory_fd)
 
 

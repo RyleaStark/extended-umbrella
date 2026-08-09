@@ -12,7 +12,7 @@ import re, sys, yaml
 root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
-assert manifest['version'] == '0.4.0.rc22-umbrel.2'
+assert manifest['version'] == '0.4.0.rc22-umbrel.3'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
 assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
