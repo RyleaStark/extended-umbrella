@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc15-umbrel.7"
+version: "0.4.0.rc15-umbrel.8"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  v0.4.0.rc8 development candidate. Adds staged Cloudflare Tunnel setup, clearer user-token guidance and zone discovery, plus mobile viewport, dashboard, and footer refinements. The public Funnel listener remains 21212; administration remains isolated on 22121.
+  Restores the historical persistent secrets mount so existing databases and connection state remain visible during upgrades. Uses Umbrel's real Lightning dependency exports and includes the RC15 runtime, health, Tailscale, and least-privilege LND corrections.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

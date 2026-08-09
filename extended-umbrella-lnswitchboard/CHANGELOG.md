@@ -2,6 +2,15 @@
 
 All notable changes to the Extended Umbrella package for lnSwitchboard are documented here.
 
+## 0.4.0.rc15-umbrel.8 — 2026-08-08
+
+### Fixed
+
+- Restores the RC12 persistent state contract at `data/secrets:/app/secrets`, so existing lnSwitchboard databases and secret state remain visible after container replacement.
+- Keeps Tailscale control and status files under the same historical persistent secrets tree.
+- Adds a network-isolated, least-privilege state migrator for records written by interim `umbrel.2` through `umbrel.7` packages. Original files are archived after SQLite integrity verification; divergent historical and interim databases fail closed without changing either copy.
+- Adds an executable upgrade regression that seeds real RC12 records and verifies the exact RC15 image can still read them through the rendered package mount.
+
 ## 0.4.0.rc15-umbrel.7 — 2026-08-08
 
 ### Fixed
