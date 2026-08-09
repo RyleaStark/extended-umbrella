@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "0.9.12-umbrel.3"
+version: "0.9.12-umbrel.4"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
   Run a personal Electrum server for Litecoin using an actual Litecoin-compatible
@@ -21,8 +21,9 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Initial staging release. Adds a dedicated Litecoin-compatible Electrs runtime,
-  separate storage and network identity, a Tor endpoint, and Litecoin-specific GUI branding.
+  Moves the Litecoin Electrum endpoint to port 51001 so it remains distinct from
+  Bitcoin Electrs while preserving the separate Litecoin runtime, storage, Tor endpoint,
+  and GUI identity.
 backupIgnore:
   - data/electrs
 submitter: "Rylea Stark"

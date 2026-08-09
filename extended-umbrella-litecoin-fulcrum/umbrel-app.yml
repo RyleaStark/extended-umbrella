@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-fulcrum
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.4"
+version: "2.1.1-umbrel.5"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -19,8 +19,9 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Rebuilds the management interface from the official Fulcrum GUI rather than the Electrs GUI,
-  applies the approved Fulcrum-specific Litecoin identity, and fixes the GUI-to-Fulcrum runtime contract.
+  Moves the Litecoin Fulcrum endpoint to port 51002 so it remains distinct from
+  Bitcoin Fulcrum while preserving the independent Fulcrum runtime, storage, Tor endpoint,
+  and Litecoin-specific GUI identity.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"
