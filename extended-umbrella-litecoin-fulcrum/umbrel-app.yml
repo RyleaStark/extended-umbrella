@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.6"
+version: "2.1.1-umbrel.7"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -21,9 +21,10 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Advertises Fulcrum (LTC) as an implementation of the Electrs (LTC) capability and
-  exports canonical Electrs connection aliases, allowing dependent apps to select either
-  indexer while retaining Fulcrum's Litecoin-specific 51002 endpoint.
+  Introduces a fully redesigned, responsive Fulcrum interface with clearer runtime and
+  synchronization status, accessible local and Tor connection details, and locally generated
+  wallet QR codes. The Fulcrum 2.1.1 daemon, persistent index, provider compatibility, and
+  Litecoin wallet port 51002 remain unchanged.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"

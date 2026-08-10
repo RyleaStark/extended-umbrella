@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.7 — 2026-08-09
+
+### Changed
+
+- Replaces the legacy interface with the approved responsive Litecoin Fulcrum dashboard.
+- Adds accessible local and Tor connection details with locally generated wallet QR codes.
+- Keeps Fulcrum 2.1.1, existing index data, provider aliases, and wallet port 51002 unchanged.
+
 ## 2.1.1-umbrel.3 — 2026-08-08
 
 ### Fixed
