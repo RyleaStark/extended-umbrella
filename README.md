@@ -1,6 +1,6 @@
 # Extended Umbrella
 
-A community Umbrel App Store maintained by [RyleaStark](https://github.com/RyleaStark), with a privacy-first Litecoin stack and self-hosted Lightning tooling.
+A community Umbrel App Store maintained by [RyleaStark](https://github.com/RyleaStark).
 
 Extended Umbrella packages pin released container images by immutable OCI index digest. Litecoin application images are published for both `linux/amd64` and `linux/arm64` and are independently checked for anonymous pulls before store publication.
 
