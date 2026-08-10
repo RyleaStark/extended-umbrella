@@ -20,7 +20,7 @@ https://github.com/RyleaStark/extended-umbrella.git
 | [Electrs (LTC)](https://github.com/RyleaStark/umbrel-litecoin-electrs) | `extended-umbrella-litecoin-electrs` | `3.4.0-dev.3752866-umbrel.5` | `2111` | Canonical Litecoin Electrum capability provider; wallet port `51001` |
 | [Fulcrum (LTC)](https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui) | `extended-umbrella-litecoin-fulcrum` | `2.1.1-umbrel.8` | `2109` | Alternative high-performance Electrum provider; wallet port `51002` |
 | [ElectrumX (LTC)](https://github.com/RyleaStark/umbrel-electrumx-ltc) | `extended-umbrella-litecoin-electrumx` | `2.0.0-umbrel.4` | `2108` | Alternative lightweight Electrum provider; wallet port `51003` |
-| [Litecoin Space](https://github.com/RyleaStark/umbrel-litecoinspace) | `extended-umbrella-litecoin-litecoinspace` | `3.3.1-umbrel.7` | `3012` | Self-hosted Litecoin explorer and mempool visualizer |
+| [Litecoin Space](https://github.com/RyleaStark/umbrel-litecoin-ltcspace) | `extended-umbrella-litecoin-ltcspace` | `3.3.1-umbrel.8` | `3012` | Self-hosted Litecoin explorer and mempool visualizer |
 | [lnSwitchboard](https://github.com/RyleaStark/lnSwitchboard) | `extended-umbrella-lnswitchboard` | `0.4.0.rc22-umbrel.3` | `22121` | Self-hosted Lightning Addresses and NIP-05 identities |
 
 ## Litecoin dependency model
@@ -48,8 +48,8 @@ Litecoin Core
 | `ghcr.io/ryleastark/umbrel-litecoin-fulcrum-gui` | Fulcrum Umbrel interface |
 | `ghcr.io/ryleastark/umbrel-litecoin-electrumx-gui` | ElectrumX Umbrel interface |
 | `ghcr.io/ryleastark/umbrel-litecoin-electrumx` | Litecoin ElectrumX daemon |
-| `ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-frontend` | Litecoin Space web application |
-| `ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-backend` | Litecoin Space API/indexing backend |
+| `ghcr.io/ryleastark/umbrel-litecoin-ltcspace-frontend` | Litecoin Space web application |
+| `ghcr.io/ryleastark/umbrel-litecoin-ltcspace-backend` | Litecoin Space API/indexing backend |
 
 Fulcrum itself uses the upstream `cculianu/fulcrum` image; only its Umbrel interface is published under the RyleaStark namespace.
 

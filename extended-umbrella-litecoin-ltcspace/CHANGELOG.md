@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Space are documented here.
 
+## 3.3.1-umbrel.8 — 2026-08-10
+
+### Changed
+
+- Renames the package directory and app ID to `extended-umbrella-litecoin-ltcspace`.
+- Uses the immutable `v3.3.1-umbrel.4` images from `ghcr.io/ryleastark/umbrel-litecoin-ltcspace-{frontend,backend}`.
+- This is an Umbrel app-ID rename. Existing installations must preserve and migrate their data before installing the renamed app.
+
 ## 3.3.1-umbrel.7 — 2026-08-10
 
 ### Changed

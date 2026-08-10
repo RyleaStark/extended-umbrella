@@ -1,0 +1,33 @@
+manifestVersion: 1
+id: extended-umbrella-litecoin-ltcspace
+category: bitcoin
+name: "Litecoin Space"
+version: "3.3.1-umbrel.8"
+tagline: "Explore your own Litecoin node"
+description: >-
+  Litecoin Space is a self-hosted Litecoin block explorer and mempool visualizer.
+
+  This Extended Umbrella package connects the Litecoin Foundation's Litecoin Space fork to your local Litecoin Core and Fulcrum LTC apps, keeping blockchain queries on your Umbrel.
+
+  This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.
+releaseNotes: >-
+  Aligns the app and GHCR image namespaces with the maintained ltcspace repository:
+  extended-umbrella-litecoin-ltcspace, umbrel-litecoin-ltcspace-frontend, and
+  umbrel-litecoin-ltcspace-backend. This ID rename is a new Umbrel app identity; existing
+  installations must preserve and migrate their data before installing this package.
+developer: "Litecoin Foundation and RyleaStark"
+website: https://litecoinspace.org
+dependencies:
+  - extended-umbrella-litecoin-core
+  - extended-umbrella-litecoin-electrs
+repo: https://github.com/RyleaStark/umbrel-litecoin-ltcspace
+support: https://github.com/RyleaStark/umbrel-litecoin-ltcspace/issues
+port: 3012
+icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-ltcspace/gallery/icon.svg
+gallery:
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-ltcspace/gallery/1.jpg
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+submitter: "Rylea Stark"
+submission: https://github.com/RyleaStark/extended-umbrella

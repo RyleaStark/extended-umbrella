@@ -1,35 +1,35 @@
 services:
   app_proxy:
     environment:
-      APP_HOST: $APP_LITECOIN_LITECOINSPACE_IP
-      APP_PORT: $APP_LITECOIN_LITECOINSPACE_PORT
+      APP_HOST: $APP_LITECOIN_LTCSPACE_IP
+      APP_PORT: $APP_LITECOIN_LTCSPACE_PORT
       PROXY_AUTH_ADD: "false"
 
   web:
-    image: ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-frontend:v3.3.1-umbrel.3@sha256:7605dc691042775c29635e3c7b34a8c566230322f3fc561ae231b9042b1530c1
+    image: ghcr.io/ryleastark/umbrel-litecoin-ltcspace-frontend:v3.3.1-umbrel.4@sha256:878533568302f861f2f6eb4fb3799d6c2f6079e4e473a2f5f66d299b7b150e63
     user: "1000:1000"
     init: true
     restart: on-failure
     stop_grace_period: 1m
     command: "./wait-for mariadb:3306 --timeout=720 -- nginx -g 'daemon off;'"
     environment:
-      FRONTEND_HTTP_PORT: $APP_LITECOIN_LITECOINSPACE_PORT
-      BACKEND_MAINNET_HTTP_HOST: $APP_LITECOIN_LITECOINSPACE_API_IP
+      FRONTEND_HTTP_PORT: $APP_LITECOIN_LTCSPACE_PORT
+      BACKEND_MAINNET_HTTP_HOST: $APP_LITECOIN_LTCSPACE_API_IP
       BACKEND_MAINNET_HTTP_PORT: "8999"
-      NGINX_PORT: $APP_LITECOIN_LITECOINSPACE_PORT
-      NGINX_HOSTNAME: $APP_LITECOIN_LITECOINSPACE_API_IP
+      NGINX_PORT: $APP_LITECOIN_LTCSPACE_PORT
+      NGINX_HOSTNAME: $APP_LITECOIN_LTCSPACE_API_IP
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:$APP_LITECOIN_LITECOINSPACE_PORT/ | grep -q '<html' || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:$APP_LITECOIN_LTCSPACE_PORT/ | grep -q '<html' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 30s
     networks:
       default:
-        ipv4_address: $APP_LITECOIN_LITECOINSPACE_IP
+        ipv4_address: $APP_LITECOIN_LTCSPACE_IP
 
   api:
-    image: ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-backend:v3.3.1-umbrel.3@sha256:4021a185117a49471e22b4e9fde5e5243dbef49c358dac9ba95c7c26d4cff3fd
+    image: ghcr.io/ryleastark/umbrel-litecoin-ltcspace-backend:v3.3.1-umbrel.4@sha256:99e83c520a6a5b5d639bf0d2901b37f2dc839b4269925960272473e62173e205
     user: "1000:1000"
     init: true
     restart: on-failure
@@ -51,7 +51,7 @@ services:
       ELECTRUM_PORT: $APP_LITECOIN_ELECTRS_NODE_PORT
       ELECTRUM_TLS_ENABLED: "false"
       DATABASE_ENABLED: "true"
-      DATABASE_HOST: $APP_LITECOIN_LITECOINSPACE_DB_IP
+      DATABASE_HOST: $APP_LITECOIN_LTCSPACE_DB_IP
       DATABASE_PORT: "3306"
       DATABASE_DATABASE: "mempool"
       DATABASE_USERNAME: "mempool"
@@ -63,7 +63,7 @@ services:
       MEMPOOL_STDOUT_LOG_MIN_PRIORITY: "info"
       STATISTICS_ENABLED: "true"
       LIGHTNING_ENABLED: "false"
-      NODE_OPTIONS: "--max-old-space-size=${APP_LITECOIN_LITECOINSPACE_NODE_MAX_OLD_SPACE_SIZE:-1024}"
+      NODE_OPTIONS: "--max-old-space-size=${APP_LITECOIN_LTCSPACE_NODE_MAX_OLD_SPACE_SIZE:-1024}"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8999/api/v1/backend-info | grep -q . || exit 1"]
       interval: 30s
@@ -72,7 +72,7 @@ services:
       start_period: 2m
     networks:
       default:
-        ipv4_address: $APP_LITECOIN_LITECOINSPACE_API_IP
+        ipv4_address: $APP_LITECOIN_LTCSPACE_API_IP
 
   mariadb:
     image: mariadb:10.5.21@sha256:f3ec8c1d1cd3d62a21e7c6e3dee4cb33227c7df6dab5644bf2c077e21dfbc63d
@@ -95,4 +95,4 @@ services:
       start_period: 30s
     networks:
       default:
-        ipv4_address: $APP_LITECOIN_LITECOINSPACE_DB_IP
+        ipv4_address: $APP_LITECOIN_LTCSPACE_DB_IP
