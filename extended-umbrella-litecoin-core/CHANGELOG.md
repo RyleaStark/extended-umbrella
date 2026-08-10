@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Core are documented here.
 
+## 0.21.5.6-umbrel.1 — 2026-08-10
+
+### Security
+
+- Upgrades the packaged Litecoin node from Core v0.21.5.5 to v0.21.5.6, including upstream MWEB/P2P validation and consensus-security changes.
+- Pins the verified multi-architecture v0.3.1 GUI/node image by immutable OCI index digest.
+
+### Changed
+
+- Moves the image runtime and build toolchain to Node 24.19 LTS and applies supported dependency security updates.
+
 ## 0.21.5.5-umbrel.3 — 2026-08-08
 
 ### Fixed

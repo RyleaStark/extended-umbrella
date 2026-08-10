@@ -5,7 +5,7 @@ services:
       APP_PORT: 3000
 
   app:
-    image: ghcr.io/ryleastark/umbrel-litecoin-core-gui:v0.2.1@sha256:baeafc94dac808ba94d03f1bbae9877880691c05913e071b9f35dd0be6b5646b
+    image: ghcr.io/ryleastark/umbrel-litecoin-core-gui:v0.3.1@sha256:23dfbcb53ada2df4fe24cb0a1784b6bca7f27a389ed28bcf001ec7c9fc408341
     user: "1000:1000"
     init: true
     restart: on-failure
