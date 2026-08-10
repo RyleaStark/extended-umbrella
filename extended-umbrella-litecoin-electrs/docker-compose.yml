@@ -33,8 +33,8 @@ services:
       - mainnet
       - --daemon-rpc-addr
       - "${APP_LITECOIN_NODE_IP}:${APP_LITECOIN_RPC_PORT}"
-      - --cookie
-      - "${APP_LITECOIN_RPC_USER}:${APP_LITECOIN_RPC_PASS}"
+      - --daemon-dir
+      - /data
       - --electrum-rpc-addr
       - "0.0.0.0:${APP_LITECOIN_ELECTRS_NODE_PORT}"
       - --electrum-banner
@@ -44,7 +44,7 @@ services:
       - --jsonrpc-import
       - --lightmode
     volumes:
-      - "${APP_DATA_DIR}/data/electrs:/data/db"
+      - "${APP_DATA_DIR}/data/electrs-v3:/data"
     ports:
       - "${APP_LITECOIN_ELECTRS_NODE_PORT}:${APP_LITECOIN_ELECTRS_NODE_PORT}"
     networks:

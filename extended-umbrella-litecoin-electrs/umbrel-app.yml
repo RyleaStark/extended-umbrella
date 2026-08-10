@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "3.4.0-dev.3752866-umbrel.4"
+version: "3.4.0-dev.3752866-umbrel.5"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
   Run a personal Electrum server for Litecoin using the maintained rust-litecoin fork of
@@ -21,13 +21,12 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Replaces the stale 2023 electrs-ltc lineage with the maintained rust-litecoin/electrs-ltc source
-  pinned at commit 3752866675daf7a3825e6cb7db847944bc4b3db8. This is honestly versioned as a
-  mempool-electrs 3.4.0-dev snapshot because upstream has no stable tag. It starts a fresh,
-  incompatible light-mode index using remote Litecoin Core JSON-RPC; there are no existing installs
-  to migrate. The daemon uses a shell-free Distroless runtime and a patched logging dependency. The provider contract, GUI,
-  Local/Tor behavior, and wallet port 51001 remain unchanged.
+  Prevents Litecoin Core RPC credentials from appearing in Electrs startup logs or container command metadata by
+  provisioning a private cookie file through the update-safe pre-start hook. The maintained mempool-electrs 3.4.0-dev
+  snapshot now uses a distinct electrs-v3 state path for its incompatible fresh index while preserving legacy bytes for
+  rollback. The Distroless daemon image, provider contract, GUI, Local/Tor behavior, and wallet port 51001 remain unchanged.
 backupIgnore:
   - data/electrs
+  - data/electrs-v3
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

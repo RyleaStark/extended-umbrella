@@ -2,6 +2,17 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.5 — 2026-08-10
+
+### Security
+
+- Removes Litecoin Core RPC credentials from Electrs command arguments and startup configuration logs.
+- Provisions a mode-0600 cookie file through the update-safe pre-start hook instead.
+
+### Changed
+
+- Uses `data/electrs-v3` for the incompatible mempool-electrs index and leaves legacy index bytes untouched for rollback.
+
 ## 3.4.0-dev.3752866-umbrel.4 — 2026-08-10
 
 ### Changed
@@ -12,7 +23,7 @@ All notable changes to the Extended Umbrella package for Litecoin Electrs are do
 - Publishes the daemon as `ghcr.io/ryleastark/umbrel-litecoin-electrs-daemon`, avoiding the orphaned old-source GHCR package.
 - Uses a shell-free, digest-pinned Distroless C/C++ runtime instead of general-purpose Debian.
 - Updates `stderrlog` to 0.6 so the active `thread_local` dependency receives its security fix.
-- Starts a fresh index because mempool-electrs indexes are incompatible with legacy electrs indexes; no existing installations require migration.
+- Starts a fresh index because mempool-electrs indexes are incompatible with legacy electrs indexes.
 - Preserves the Electrs provider contract, GUI, Local/Tor details, and wallet port 51001.
 
 ## 0.9.12-umbrel.5 — 2026-08-09
