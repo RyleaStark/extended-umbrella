@@ -2,6 +2,15 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.10 — 2026-08-10
+
+### Fixed
+
+- Keeps all six chain blocks fixed in place while a progressive pulse moves across them only during genuine indexing.
+- Preserves provider-reported completed progress as solid blocks independently from the pulse.
+- Keeps ready, connecting, waiting, and degraded states static and disables animation, transforms, and filters for reduced motion.
+- Keeps progress-only telemetry, Warn-level logging, the `electrs-v3` index, provider contract, and wallet port 51001 unchanged.
+
 ## 3.4.0-dev.3752866-umbrel.9 — 2026-08-10
 
 ### Fixed

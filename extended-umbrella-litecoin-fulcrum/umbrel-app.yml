@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.12"
+version: "2.1.1-umbrel.13"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -21,9 +21,10 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Keeps all six status blocks visibly animated from the beginning of genuine initial indexing, including progress below
-  the first completed block threshold. Synchronized blocks remain solid and static, while reduced-motion preferences are
-  honored. UI port 12109, Fulcrum 2.1.1, persistent index data, and wallet port 51002 remain unchanged.
+  Aligns the six-block indexing display with the Litecoin indexer family: provider-reported progress remains solid while
+  a fixed-position pulse moves across all six blocks only during genuine indexing. Ready and non-indexing states remain
+  static, and reduced-motion preferences disable the effect. UI port 12109, Fulcrum 2.1.1, persistent index data, and
+  wallet port 51002 remain unchanged.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"

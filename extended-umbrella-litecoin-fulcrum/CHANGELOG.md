@@ -2,6 +2,15 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.13 — 2026-08-10
+
+### Fixed
+
+- Keeps all six chain blocks fixed in place while a progressive pulse moves across them only during genuine indexing.
+- Preserves provider-reported completed progress as solid blocks independently from the pulse.
+- Keeps ready, connecting, waiting, and degraded states static and disables animation, transforms, and filters for reduced motion.
+- Keeps UI port 12109, Fulcrum 2.1.1, persistent index data, provider aliases, and wallet port 51002 unchanged.
+
 ## 2.1.1-umbrel.12 — 2026-08-10
 
 ### Fixed

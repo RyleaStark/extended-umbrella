@@ -4,7 +4,7 @@ services:
       APP_HOST: extended-umbrella-litecoin-fulcrum_app_1
       APP_PORT: 3006
   app:
-    image: ghcr.io/ryleastark/umbrel-litecoin-fulcrum-gui:v1.0.7@sha256:e467ec0f4ebbe788b8d1d3235640e84f904e48d1078b0e7c528126c1c79b8b82
+    image: ghcr.io/ryleastark/umbrel-litecoin-fulcrum-gui:v1.0.8@sha256:0236ea07c70e2ae22aa9092f2ac2a271127f9526d50b2879b8dec34b016d697c
     depends_on: [fulcrum]
     restart: on-failure
     environment:

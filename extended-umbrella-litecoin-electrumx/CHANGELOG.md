@@ -2,6 +2,15 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.9 — 2026-08-10
+
+### Fixed
+
+- Keeps all six chain blocks fixed in place while a progressive pulse moves across them only during genuine indexing.
+- Preserves provider-reported completed progress as solid blocks independently from the pulse.
+- Keeps ready, connecting, waiting, and degraded states static and disables animation, transforms, and filters for reduced motion.
+- Keeps the hardened daemon, provider aliases, wallet port 51003, and private admin RPC 8000 unchanged.
+
 ## 2.0.0-umbrel.8 — 2026-08-10
 
 ### Fixed

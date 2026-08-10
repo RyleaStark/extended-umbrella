@@ -5,7 +5,7 @@ services:
       APP_PORT: 3006
 
   app:
-    image: ghcr.io/ryleastark/umbrel-litecoin-electrs-gui:v1.0.9@sha256:d75d7eaf0eef8a80d051a7bccc677a316f7f2238763db681e608bfa959e6d510
+    image: ghcr.io/ryleastark/umbrel-litecoin-electrs-gui:v1.0.10@sha256:93bbaf3a1f2b84d230c8739938646a7f90572f56fb0f4f8f2c35df6e5a795911
     depends_on: [electrs]
     restart: on-failure
     environment:
