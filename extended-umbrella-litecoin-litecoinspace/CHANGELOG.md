@@ -2,6 +2,15 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Space are documented here.
 
+## 3.3.1-umbrel.7 — 2026-08-10
+
+### Changed
+
+- Republishes the frontend as `ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-frontend`.
+- Republishes the backend as `ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-backend`.
+- Adds source, version, revision, and product-title OCI metadata to both multi-platform images.
+- Keeps Litecoin Space 3.3.1, MariaDB data, explorer cache, dependencies, provider contract, and ports unchanged.
+
 ## 3.3.1-umbrel.6 — 2026-08-10
 
 ### Changed

@@ -23,18 +23,26 @@ services:
         ipv4_address: $APP_LITECOIN_ELECTRS_IP
 
   electrs:
-    image: ghcr.io/ryleastark/umbrel-electrs-ltc:v0.9.12-umbrel.3@sha256:f3073afe86af25dbd3c0767cbbc19cc2b8c5e7b5e238a7b635154e4912368514
+    image: ghcr.io/ryleastark/umbrel-litecoin-electrs-daemon:v3.4.0-dev.3752866-umbrel.4@sha256:d485190df2a8a8cab9c254c69c2a55f560cc3c09a2ed7bba253fd91fa4a9f367
     init: true
     stop_grace_period: 5m
     restart: on-failure
-    environment:
-      ELECTRS_LOG_FILTERS: INFO
-      ELECTRS_DAEMON_RPC_ADDR: "${APP_LITECOIN_NODE_IP}:${APP_LITECOIN_RPC_PORT}"
-      ELECTRS_DAEMON_P2P_ADDR: "${APP_LITECOIN_NODE_IP}:${APP_LITECOIN_P2P_PORT}"
-      ELECTRS_ELECTRUM_RPC_ADDR: "0.0.0.0:${APP_LITECOIN_ELECTRS_NODE_PORT}"
-      ELECTRS_SERVER_BANNER: "Electrs (LTC) on Umbrel"
-      ELECTRS_AUTH: "${APP_LITECOIN_RPC_USER}:${APP_LITECOIN_RPC_PASS}"
-      ELECTRS_DB_DIR: "/data/db"
+    command:
+      - -v
+      - --network
+      - mainnet
+      - --daemon-rpc-addr
+      - "${APP_LITECOIN_NODE_IP}:${APP_LITECOIN_RPC_PORT}"
+      - --cookie
+      - "${APP_LITECOIN_RPC_USER}:${APP_LITECOIN_RPC_PASS}"
+      - --electrum-rpc-addr
+      - "0.0.0.0:${APP_LITECOIN_ELECTRS_NODE_PORT}"
+      - --electrum-banner
+      - "Electrs (LTC) on Umbrel"
+      - --db-dir
+      - /data/db
+      - --jsonrpc-import
+      - --lightmode
     volumes:
       - "${APP_DATA_DIR}/data/electrs:/data/db"
     ports:

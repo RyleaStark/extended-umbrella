@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-litecoinspace
 category: bitcoin
 name: "Litecoin Space"
-version: "3.3.1-umbrel.6"
+version: "3.3.1-umbrel.7"
 tagline: "Explore your own Litecoin node"
 description: >-
   Litecoin Space is a self-hosted Litecoin block explorer and mempool visualizer.
@@ -11,9 +11,10 @@ description: >-
 
   This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.
 releaseNotes: >-
-  Standardizes the package identity as extended-umbrella-litecoin-litecoinspace alongside the
-  other Extended Umbrella Litecoin applications. The Litecoin Space frontend, backend, database,
-  persistent data paths, Electrs provider contract, and native Fulcrum port 51002 remain unchanged.
+  Republishes the frontend and backend under the standardized
+  umbrel-litecoin-litecoinspace package namespace, with signed-source OCI provenance and immutable
+  multi-platform image pins. The application ID, database, persistent data paths, Electrs provider
+  contract, native Fulcrum port 51002, and Litecoin Space 3.3.1 runtime remain unchanged.
 developer: "Litecoin Foundation and RyleaStark"
 website: https://litecoinspace.org
 dependencies:

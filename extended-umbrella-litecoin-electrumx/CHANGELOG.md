@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.4 — 2026-08-10
+
+### Changed
+
+- Republishes the daemon as `ghcr.io/ryleastark/umbrel-litecoin-electrumx`.
+- Adds source, version, revision, and product-title OCI metadata to the multi-platform image.
+- Keeps ElectrumX 2.0, index data, provider aliases, GUI, wallet port 51003, and private admin RPC 8000 unchanged.
+
 ## 2.0.0-umbrel.3 — 2026-08-10
 
 ### Fixed

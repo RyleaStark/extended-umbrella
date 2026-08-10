@@ -6,7 +6,7 @@ services:
       PROXY_AUTH_ADD: "false"
 
   web:
-    image: ghcr.io/ryleastark/umbrel-litecoinspace-frontend:v3.3.1-umbrel.2@sha256:bf47bac4caa3058ce956d47b50d415f2e5377a0e0610790b20eef9a4314b39ac
+    image: ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-frontend:v3.3.1-umbrel.3@sha256:7605dc691042775c29635e3c7b34a8c566230322f3fc561ae231b9042b1530c1
     user: "1000:1000"
     init: true
     restart: on-failure
@@ -29,7 +29,7 @@ services:
         ipv4_address: $APP_LITECOIN_LITECOINSPACE_IP
 
   api:
-    image: ghcr.io/ryleastark/umbrel-litecoinspace-backend:v3.3.1-umbrel.2@sha256:d81a3504dc1be2f94d1e89af9450fc53f93992eb1fcacd42970b5890cf046963
+    image: ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-backend:v3.3.1-umbrel.3@sha256:4021a185117a49471e22b4e9fde5e5243dbef49c358dac9ba95c7c26d4cff3fd
     user: "1000:1000"
     init: true
     restart: on-failure

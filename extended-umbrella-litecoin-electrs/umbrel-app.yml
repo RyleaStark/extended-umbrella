@@ -2,18 +2,18 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "0.9.12-umbrel.5"
+version: "3.4.0-dev.3752866-umbrel.4"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
-  Run a personal Electrum server for Litecoin using an actual Litecoin-compatible
-  Electrs runtime. Electrs (LTC) indexes your own Litecoin Core node and exposes
-  independent local-network and Tor endpoints for compatible wallets and apps.
-developer: Roman Zeyde, losh11, and RyleaStark
-website: https://github.com/RyleaStark/umbrel-electrs-ltc
+  Run a personal Electrum server for Litecoin using the maintained rust-litecoin fork of
+  mempool-electrs. Electrs (LTC) builds a private light-mode index from your Litecoin Core node
+  over JSON-RPC and serves wallet history over your local network or Tor on port 51001.
+developer: rust-litecoin, mempool, and RyleaStark
+website: https://github.com/RyleaStark/umbrel-litecoin-electrs
 dependencies:
   - extended-umbrella-litecoin-core
-repo: https://github.com/RyleaStark/umbrel-electrs-ltc
-support: https://github.com/RyleaStark/umbrel-electrs-ltc/issues
+repo: https://github.com/RyleaStark/umbrel-litecoin-electrs
+support: https://github.com/RyleaStark/umbrel-litecoin-electrs/issues
 port: 2111
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrs/gallery/icon.png
 gallery:
@@ -21,10 +21,12 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Introduces a fully redesigned, responsive Electrs interface with clearer runtime and
-  synchronization status, accessible local and Tor connection details, and locally generated
-  wallet QR codes. The Electrs 0.9.12 daemon, persistent index, and Litecoin wallet port 51001
-  remain unchanged.
+  Replaces the stale 2023 electrs-ltc lineage with the maintained rust-litecoin/electrs-ltc source
+  pinned at commit 3752866675daf7a3825e6cb7db847944bc4b3db8. This is honestly versioned as a
+  mempool-electrs 3.4.0-dev snapshot because upstream has no stable tag. It starts a fresh,
+  incompatible light-mode index using remote Litecoin Core JSON-RPC; there are no existing installs
+  to migrate. The daemon uses a shell-free Distroless runtime and a patched logging dependency. The provider contract, GUI,
+  Local/Tor behavior, and wallet port 51001 remain unchanged.
 backupIgnore:
   - data/electrs
 submitter: "Rylea Stark"

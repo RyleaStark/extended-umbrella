@@ -16,11 +16,11 @@ https://github.com/RyleaStark/extended-umbrella.git
 
 | Application | Package ID | Version | UI port | Role |
 | --- | --- | ---: | ---: | --- |
-| [Litecoin Core](https://github.com/RyleaStark/umbrel-litecoin-core-gui) | `extended-umbrella-litecoin-core` | `0.21.5.5-umbrel.6` | `2110` | Fully validating Litecoin node and wallet RPC provider |
-| [Electrs (LTC)](https://github.com/RyleaStark/umbrel-electrs-ltc) | `extended-umbrella-litecoin-electrs` | `0.9.12-umbrel.5` | `2111` | Canonical Litecoin Electrum capability provider; wallet port `51001` |
+| [Litecoin Core](https://github.com/RyleaStark/umbrel-litecoin-core-gui) | `extended-umbrella-litecoin-core` | `0.21.5.6-umbrel.1` | `2110` | Fully validating Litecoin node and wallet RPC provider |
+| [Electrs (LTC)](https://github.com/RyleaStark/umbrel-litecoin-electrs) | `extended-umbrella-litecoin-electrs` | `3.4.0-dev.3752866-umbrel.4` | `2111` | Canonical Litecoin Electrum capability provider; wallet port `51001` |
 | [Fulcrum (LTC)](https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui) | `extended-umbrella-litecoin-fulcrum` | `2.1.1-umbrel.8` | `2109` | Alternative high-performance Electrum provider; wallet port `51002` |
-| [ElectrumX (LTC)](https://github.com/RyleaStark/umbrel-electrumx-ltc) | `extended-umbrella-litecoin-electrumx` | `2.0.0-umbrel.3` | `2108` | Alternative lightweight Electrum provider; wallet port `51003` |
-| [Litecoin Space](https://github.com/RyleaStark/umbrel-litecoinspace) | `extended-umbrella-litecoin-litecoinspace` | `3.3.1-umbrel.6` | `3012` | Self-hosted Litecoin explorer and mempool visualizer |
+| [ElectrumX (LTC)](https://github.com/RyleaStark/umbrel-electrumx-ltc) | `extended-umbrella-litecoin-electrumx` | `2.0.0-umbrel.4` | `2108` | Alternative lightweight Electrum provider; wallet port `51003` |
+| [Litecoin Space](https://github.com/RyleaStark/umbrel-litecoinspace) | `extended-umbrella-litecoin-litecoinspace` | `3.3.1-umbrel.7` | `3012` | Self-hosted Litecoin explorer and mempool visualizer |
 | [lnSwitchboard](https://github.com/RyleaStark/lnSwitchboard) | `extended-umbrella-lnswitchboard` | `0.4.0.rc22-umbrel.3` | `22121` | Self-hosted Lightning Addresses and NIP-05 identities |
 
 ## Litecoin dependency model
@@ -44,12 +44,12 @@ Litecoin Core
 | --- | --- |
 | `ghcr.io/ryleastark/umbrel-litecoin-core-gui` | Litecoin Core Umbrel interface |
 | `ghcr.io/ryleastark/umbrel-litecoin-electrs-gui` | Electrs Umbrel interface |
-| `ghcr.io/ryleastark/umbrel-electrs-ltc` | Litecoin-compatible Electrs daemon |
+| `ghcr.io/ryleastark/umbrel-litecoin-electrs` | Litecoin-compatible Electrs daemon |
 | `ghcr.io/ryleastark/umbrel-litecoin-fulcrum-gui` | Fulcrum Umbrel interface |
 | `ghcr.io/ryleastark/umbrel-litecoin-electrumx-gui` | ElectrumX Umbrel interface |
-| `ghcr.io/ryleastark/umbrel-electrumx-ltc` | Litecoin ElectrumX daemon |
-| `ghcr.io/ryleastark/umbrel-litecoinspace-frontend` | Litecoin Space web application |
-| `ghcr.io/ryleastark/umbrel-litecoinspace-backend` | Litecoin Space API/indexing backend |
+| `ghcr.io/ryleastark/umbrel-litecoin-electrumx` | Litecoin ElectrumX daemon |
+| `ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-frontend` | Litecoin Space web application |
+| `ghcr.io/ryleastark/umbrel-litecoin-litecoinspace-backend` | Litecoin Space API/indexing backend |
 
 Fulcrum itself uses the upstream `cculianu/fulcrum` image; only its Umbrel interface is published under the RyleaStark namespace.
 
