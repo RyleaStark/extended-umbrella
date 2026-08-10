@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.10 — 2026-08-10
+
+### Fixed
+
+- Moves the Litecoin Fulcrum dashboard from port 2109 to 12109 so it can coexist with the official Bitcoin Fulcrum app.
+- Keeps the public Litecoin wallet listener on port 51002 and leaves the daemon image, GUI image, persistent index, and provider aliases unchanged.
+
 ## 2.1.1-umbrel.9 — 2026-08-10
 
 ### Fixed
