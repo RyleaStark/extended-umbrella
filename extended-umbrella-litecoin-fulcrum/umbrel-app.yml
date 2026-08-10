@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.10"
+version: "2.1.1-umbrel.11"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -21,9 +21,10 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Moves the Litecoin Fulcrum dashboard from port 2109 to 12109 so it can be installed alongside the official Bitcoin
-  Fulcrum app, which already owns port 2109. Fulcrum 2.1.1, persistent index data, Local/Tor behavior, provider
-  compatibility, and wallet port 51002 remain unchanged.
+  Makes dashboard copy controls work on HTTP-only Umbrel origins, presents wallet connections as suffix-free host:port
+  values with SSL set to None, animates real initial-indexing progress derived safely from Fulcrum's mounted log when its
+  listener is not yet available, and displays solid blocks when synchronized. UI port 12109, Fulcrum 2.1.1, persistent
+  index data, and wallet port 51002 remain unchanged.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"

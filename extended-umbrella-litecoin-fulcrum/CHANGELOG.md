@@ -2,6 +2,16 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.11 — 2026-08-10
+
+### Fixed
+
+- Makes Address, Port, and Connection string copy controls work on HTTP-only Umbrel origins.
+- Presents Local and Tor wallet connections as suffix-free `host:port` values and identifies the transport separately as `SSL: None`.
+- Animates real initial-indexing progress from Fulcrum's mounted log while its listener is not yet available, makes completed progress solid, and honors reduced-motion preferences.
+- Rejects stale completed log heights as readiness evidence, so a closed listener cannot falsely report synchronization.
+- Keeps UI port 12109, Fulcrum 2.1.1, persistent index data, provider aliases, and wallet port 51002 unchanged.
+
 ## 2.1.1-umbrel.10 — 2026-08-10
 
 ### Fixed

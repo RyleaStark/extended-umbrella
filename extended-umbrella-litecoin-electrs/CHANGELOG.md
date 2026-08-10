@@ -2,6 +2,16 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.8 — 2026-08-10
+
+### Fixed
+
+- Makes Address, Port, and Connection string copy controls work on HTTP-only Umbrel origins.
+- Presents Local and Tor wallet connections as suffix-free `host:port` values and identifies the transport separately as `SSL: None`.
+- Animates the six status blocks only while Electrs is indexing, makes completed progress solid, and honors reduced-motion preferences.
+- Shows real initial-index progress from Electrs while its Electrum listener is intentionally unavailable, without inferring readiness from stale or completed markers.
+- Keeps the maintained daemon, `data/electrs-v3` index, provider contract, and wallet port 51001 unchanged.
+
 ## 3.4.0-dev.3752866-umbrel.7 — 2026-08-10
 
 ### Fixed

@@ -2,6 +2,15 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.8 — 2026-08-10
+
+### Fixed
+
+- Makes Address, Port, and Connection string copy controls work on HTTP-only Umbrel origins.
+- Presents Local and Tor wallet connections as suffix-free `host:port` values and identifies the transport separately as `SSL: None`.
+- Animates the six status blocks only while ElectrumX is indexing, makes completed progress solid, and honors reduced-motion preferences.
+- Keeps the hardened daemon, provider aliases, wallet port 51003, and private admin RPC 8000 unchanged.
+
 ## 2.0.0-umbrel.7 — 2026-08-10
 
 ### Fixed
