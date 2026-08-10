@@ -17,8 +17,8 @@ https://github.com/RyleaStark/extended-umbrella.git
 | Application | Package ID | Version | UI port | Role |
 | --- | --- | ---: | ---: | --- |
 | [Litecoin Core](https://github.com/RyleaStark/umbrel-litecoin-core-gui) | `extended-umbrella-litecoin-core` | `0.21.5.6-umbrel.1` | `2110` | Fully validating Litecoin node and wallet RPC provider |
-| [Electrs (LTC)](https://github.com/RyleaStark/umbrel-litecoin-electrs) | `extended-umbrella-litecoin-electrs` | `3.4.0-dev.3752866-umbrel.8` | `2111` | Canonical Litecoin Electrum capability provider; wallet port `51001` |
-| [Fulcrum (LTC)](https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui) | `extended-umbrella-litecoin-fulcrum` | `2.1.1-umbrel.11` | `12109` | Alternative high-performance Electrum provider; wallet port `51002` |
+| [Electrs (LTC)](https://github.com/RyleaStark/umbrel-litecoin-electrs) | `extended-umbrella-litecoin-electrs` | `3.4.0-dev.3752866-umbrel.9` | `2111` | Canonical Litecoin Electrum capability provider; wallet port `51001` |
+| [Fulcrum (LTC)](https://github.com/RyleaStark/umbrel-litecoin-fulcrum-gui) | `extended-umbrella-litecoin-fulcrum` | `2.1.1-umbrel.12` | `12109` | Alternative high-performance Electrum provider; wallet port `51002` |
 | [ElectrumX (LTC)](https://github.com/RyleaStark/umbrel-electrumx-ltc) | `extended-umbrella-litecoin-electrumx` | `2.0.0-umbrel.8` | `2108` | Alternative lightweight Electrum provider; wallet port `51003` |
 | [Litecoin Space](https://github.com/RyleaStark/umbrel-litecoin-ltcspace) | `extended-umbrella-litecoin-ltcspace` | `3.3.1-umbrel.8` | `3012` | Self-hosted Litecoin explorer and mempool visualizer |
 | [lnSwitchboard](https://github.com/RyleaStark/lnSwitchboard) | `extended-umbrella-lnswitchboard` | `0.4.0.rc22-umbrel.3` | `22121` | Self-hosted Lightning Addresses and NIP-05 identities |

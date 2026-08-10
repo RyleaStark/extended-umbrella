@@ -2,6 +2,15 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.9 — 2026-08-10
+
+### Fixed
+
+- Opts into the provider's narrow progress-only stderr channel so genuine `Tx/History indexing is up to height=N` markers reach the private dashboard telemetry receiver during initial indexing.
+- Retains Warn-level logging, preventing unrelated informational records such as client addresses and request URIs from entering the telemetry route.
+- Retains the bounded RFC3164 tag parser, non-blocking internal-only syslog route, stale-progress expiry, and listener-authoritative readiness behavior.
+- Keeps the maintained daemon image, `data/electrs-v3` index, provider contract, and wallet port 51001 unchanged.
+
 ## 3.4.0-dev.3752866-umbrel.8 — 2026-08-10
 
 ### Fixed

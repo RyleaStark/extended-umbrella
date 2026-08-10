@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.12 — 2026-08-10
+
+### Fixed
+
+- Keeps all six status blocks visibly animated whenever Fulcrum reports genuine indexing, including progress below the first completed block threshold.
+- Keeps synchronized blocks solid and static, leaves non-indexing states still, and honors reduced-motion preferences.
+- Keeps UI port 12109, Fulcrum 2.1.1, persistent index data, provider aliases, and wallet port 51002 unchanged.
+
 ## 2.1.1-umbrel.11 — 2026-08-10
 
 ### Fixed
