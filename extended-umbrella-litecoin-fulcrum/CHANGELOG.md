@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.8 — 2026-08-10
+
+### Fixed
+
+- Restores the centered Fulcrum logo on Tor wallet QR codes to match Local connections and the shared Litecoin indexer UI convention.
+- Keeps Fulcrum 2.1.1, existing index data, provider aliases, and wallet port 51002 unchanged.
+
 ## 2.1.1-umbrel.7 — 2026-08-09
 
 ### Changed

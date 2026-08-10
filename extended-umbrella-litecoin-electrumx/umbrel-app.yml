@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "ElectrumX (LTC)"
-version: "2.0.0-umbrel.2"
+version: "2.0.0-umbrel.3"
 tagline: "A lightweight Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by ElectrumX 2.0 and Litecoin Core.
@@ -12,11 +12,11 @@ description: >-
   your local network or Tor. ElectrumX (LTC) is an independent indexer and can satisfy
   the same Electrs (LTC) capability used by compatible applications such as Litecoin Space.
 releaseNotes: >-
-  Introduces a fully redesigned, responsive ElectrumX interface using the approved atomic
-  Litecoin identity, with clearer runtime and synchronization status, accessible local and Tor
-  connection details, and locally generated wallet QR codes. ElectrumX 2.0, persistent index
-  data, provider compatibility, and wallet port 51003 remain unchanged; private admin RPC 8000
-  is not exposed to wallets.
+  Restores the ElectrumX product logo at the center of Tor wallet QR codes so Local and Tor
+  connection details follow the same approved interface convention. The logo-bearing Tor QR
+  was decoded directly from the final mobile screenshot at error-correction level H. ElectrumX
+  2.0, persistent index data, provider compatibility, and wallet port 51003 remain unchanged;
+  private admin RPC 8000 is not exposed to wallets.
 developer: "Electrum developers and RyleaStark"
 website: https://electrumx-spesmilo.readthedocs.io/
 dependencies:
