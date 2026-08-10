@@ -23,7 +23,7 @@ services:
         ipv4_address: $APP_LITECOIN_ELECTRS_IP
 
   electrs:
-    image: ghcr.io/ryleastark/umbrel-litecoin-electrs-daemon:v3.4.0-dev.3752866-umbrel.4@sha256:d485190df2a8a8cab9c254c69c2a55f560cc3c09a2ed7bba253fd91fa4a9f367
+    image: ghcr.io/ryleastark/umbrel-litecoin-electrs:v3.4.0-dev.3752866-umbrel.5@sha256:f614d163a586797510e78721152e2c3d40b7da04382288a092dafc35f74216b0
     init: true
     stop_grace_period: 5m
     restart: on-failure

@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.6 — 2026-08-10
+
+### Changed
+
+- Moves the maintained daemon to `ghcr.io/ryleastark/umbrel-litecoin-electrs` and pins its new immutable multi-architecture index.
+- Preserves the mode-0600 RPC cookie-file boundary and distinct `data/electrs-v3` state path from the previous hotfix.
+
 ## 3.4.0-dev.3752866-umbrel.5 — 2026-08-10
 
 ### Security

@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "3.4.0-dev.3752866-umbrel.5"
+version: "3.4.0-dev.3752866-umbrel.6"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
   Run a personal Electrum server for Litecoin using the maintained rust-litecoin fork of
@@ -21,10 +21,10 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Prevents Litecoin Core RPC credentials from appearing in Electrs startup logs or container command metadata by
-  provisioning a private cookie file through the update-safe pre-start hook. The maintained mempool-electrs 3.4.0-dev
-  snapshot now uses a distinct electrs-v3 state path for its incompatible fresh index while preserving legacy bytes for
-  rollback. The Distroless daemon image, provider contract, GUI, Local/Tor behavior, and wallet port 51001 remain unchanged.
+  Moves the maintained Distroless daemon to the canonical umbrel-litecoin-electrs container package and pins its new
+  immutable multi-architecture image. The private cookie-file RPC credential boundary and distinct electrs-v3 state path
+  from the previous hotfix remain in place, preserving legacy index bytes for rollback. The provider contract, GUI,
+  Local/Tor behavior, and wallet port 51001 remain unchanged.
 backupIgnore:
   - data/electrs
   - data/electrs-v3
