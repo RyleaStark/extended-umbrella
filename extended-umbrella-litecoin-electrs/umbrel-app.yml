@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "3.4.0-dev.3752866-umbrel.10"
+version: "3.4.0-dev.3752866-umbrel.11"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
   Run a personal Electrum server for Litecoin using the maintained rust-litecoin fork of

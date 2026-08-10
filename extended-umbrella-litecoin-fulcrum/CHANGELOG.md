@@ -2,6 +2,11 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.14 — 2026-08-10
+
+- Smooth the six-block indexing handoff into the completed state without moving block positions.
+- Keep connecting, waiting, degraded, ready, and reduced-motion states static and provider-authoritative.
+
 ## 2.1.1-umbrel.13 — 2026-08-10
 
 ### Fixed

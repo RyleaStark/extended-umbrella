@@ -2,6 +2,11 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.11 — 2026-08-10
+
+- Smooth the six-block indexing handoff into the completed state without moving block positions.
+- Keep connecting, waiting, degraded, ready, and reduced-motion states static and provider-authoritative.
+
 ## 3.4.0-dev.3752866-umbrel.10 — 2026-08-10
 
 ### Fixed

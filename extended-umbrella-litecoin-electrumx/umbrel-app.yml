@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "ElectrumX (LTC)"
-version: "2.0.0-umbrel.9"
+version: "2.0.0-umbrel.10"
 tagline: "A lightweight Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by ElectrumX 2.0 and Litecoin Core.
