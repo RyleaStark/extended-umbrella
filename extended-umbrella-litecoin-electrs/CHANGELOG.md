@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.7 — 2026-08-10
+
+### Fixed
+
+- Keeps dashboard assets on HTTP for HTTP-only Umbrel origins instead of upgrading them to unsupported HTTPS.
+- Removes ineffective HTTP-origin COOP and origin-agent-cluster headers while preserving frame denial, no-referrer, and the restrictive local-only content security policy.
+- Keeps the maintained daemon, private cookie-file boundary, `data/electrs-v3` index, provider contract, and wallet port 51001 unchanged.
+
 ## 3.4.0-dev.3752866-umbrel.6 — 2026-08-10
 
 ### Changed

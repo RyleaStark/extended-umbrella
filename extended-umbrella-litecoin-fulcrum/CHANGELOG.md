@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.9 — 2026-08-10
+
+### Fixed
+
+- Keeps dashboard assets on HTTP for HTTP-only Umbrel origins instead of upgrading them to unsupported HTTPS.
+- Removes ineffective HTTP-origin COOP and origin-agent-cluster headers while preserving frame denial, no-referrer, and the restrictive local-only content security policy.
+- Keeps Fulcrum 2.1.1, persistent index data, provider aliases, and wallet port 51002 unchanged.
+
 ## 2.1.1-umbrel.8 — 2026-08-10
 
 ### Fixed

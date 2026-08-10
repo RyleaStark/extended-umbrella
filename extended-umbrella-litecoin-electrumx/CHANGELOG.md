@@ -2,6 +2,14 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.7 — 2026-08-10
+
+### Fixed
+
+- Keeps dashboard assets on HTTP for HTTP-only Umbrel origins instead of upgrading them to unsupported HTTPS.
+- Removes ineffective HTTP-origin COOP and origin-agent-cluster headers while preserving frame denial, no-referrer, and the restrictive local-only content security policy.
+- Keeps the hardened daemon, protocol cap, index path, provider aliases, wallet port 51003, and private admin RPC 8000 unchanged.
+
 ## 2.0.0-umbrel.6 — 2026-08-10
 
 ### Fixed

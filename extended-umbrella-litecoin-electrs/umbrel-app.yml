@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "3.4.0-dev.3752866-umbrel.6"
+version: "3.4.0-dev.3752866-umbrel.7"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
   Run a personal Electrum server for Litecoin using the maintained rust-litecoin fork of
@@ -21,10 +21,9 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Moves the maintained Distroless daemon to the canonical umbrel-litecoin-electrs container package and pins its new
-  immutable multi-architecture image. The private cookie-file RPC credential boundary and distinct electrs-v3 state path
-  from the previous hotfix remain in place, preserving legacy index bytes for rollback. The provider contract, GUI,
-  Local/Tor behavior, and wallet port 51001 remain unchanged.
+  Fixes the dashboard on HTTP-only Umbrel origins by preventing browser security headers from upgrading local CSS,
+  JavaScript, font, icon, and favicon requests to unsupported HTTPS. The maintained Electrs daemon, private cookie-file
+  credential boundary, electrs-v3 index data, Local/Tor behavior, provider contract, and wallet port 51001 remain unchanged.
 backupIgnore:
   - data/electrs
   - data/electrs-v3
