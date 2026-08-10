@@ -26,6 +26,8 @@ port: 2108
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrumx/gallery/icon.png
 gallery:
   - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrumx/gallery/1.png
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrumx/gallery/2.png
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrumx/gallery/3.png
 path: ""
 defaultUsername: ""
 defaultPassword: ""

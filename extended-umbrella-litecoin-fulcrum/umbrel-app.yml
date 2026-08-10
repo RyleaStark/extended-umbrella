@@ -18,6 +18,8 @@ port: 12109
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/icon.png
 gallery:
   - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/1.png
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/2.png
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-fulcrum/gallery/3.png
 path: ""
 defaultPassword: ""
 releaseNotes: >-

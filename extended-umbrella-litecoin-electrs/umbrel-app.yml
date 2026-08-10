@@ -18,6 +18,8 @@ port: 2111
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrs/gallery/icon.png
 gallery:
   - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrs/gallery/1.png
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrs/gallery/2.png
+  - https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrs/gallery/3.png
 path: ""
 defaultPassword: ""
 releaseNotes: >-
