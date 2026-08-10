@@ -2,6 +2,20 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.6 — 2026-08-10
+
+### Fixed
+
+- Caps Litecoin Electrum protocol negotiation at 1.5 to match Litecoin Core 0.21.5.x RPC capabilities.
+- Correctly disables peer announcements by passing an empty `PEER_ANNOUNCE` value.
+
+### Changed
+
+- Pins the immutable multi-architecture `v2.0.0-umbrel.5` daemon index.
+- Uses a shell-free non-root runtime with exact Python dependency constraints and verified RocksDB create/read/write support.
+- Updates source and support links to `RyleaStark/umbrel-litecoin-electrumx`.
+- Preserves the existing index path, provider aliases, GUI, wallet port 51003, and private admin RPC 8000.
+
 ## 2.0.0-umbrel.4 — 2026-08-10
 
 ### Changed

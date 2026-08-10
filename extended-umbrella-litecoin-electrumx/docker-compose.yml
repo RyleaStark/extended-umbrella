@@ -25,7 +25,7 @@ services:
         ipv4_address: $APP_LITECOIN_ELECTRUMX_IP
 
   electrumx:
-    image: ghcr.io/ryleastark/umbrel-litecoin-electrumx:v2.0.0-umbrel.2@sha256:f04dbd8136ab80856f3abe3a1139ad5dd7babaccfba0085fb73e9dddc5e547c0
+    image: ghcr.io/ryleastark/umbrel-litecoin-electrumx:v2.0.0-umbrel.5@sha256:24eaca92ab9a2ad85e2266de6ffaee5773f69e6c0a21734c836d2f6d15e81385
     user: "1000:1000"
     init: true
     restart: on-failure
@@ -38,7 +38,7 @@ services:
       DB_ENGINE: "rocksdb"
       SERVICES: "tcp://0.0.0.0:${APP_LITECOIN_ELECTRUMX_NODE_PORT},rpc://0.0.0.0:${APP_LITECOIN_ELECTRUMX_RPC_PORT}"
       PEER_DISCOVERY: "off"
-      PEER_ANNOUNCE: "false"
+      PEER_ANNOUNCE: ""
       CACHE_MB: "512"
     volumes:
       - "${APP_DATA_DIR}/data/electrumx:/data"

@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "ElectrumX (LTC)"
-version: "2.0.0-umbrel.4"
+version: "2.0.0-umbrel.6"
 tagline: "A lightweight Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by ElectrumX 2.0 and Litecoin Core.
@@ -12,16 +12,17 @@ description: >-
   your local network or Tor. ElectrumX (LTC) is an independent indexer and can satisfy
   the same Electrs (LTC) capability used by compatible applications such as Litecoin Space.
 releaseNotes: >-
-  Republishes the ElectrumX daemon under the standardized umbrel-litecoin-electrumx package
-  namespace, with signed-source OCI provenance and an immutable multi-platform image pin.
-  ElectrumX 2.0, persistent index data, provider compatibility, the v1.0.2 GUI, wallet port 51003,
-  and private admin RPC 8000 remain unchanged; RPC 8000 is not exposed to wallets.
+  Caps Litecoin Electrum protocol negotiation at 1.5 for compatibility with the packaged
+  Litecoin Core RPC surface. Moves the daemon to a shell-free, non-root runtime with locked
+  dependencies and verified RocksDB support, and correctly disables peer announcements.
+  The index data path, provider compatibility, GUI, wallet port 51003, and private admin RPC
+  8000 remain unchanged.
 developer: "Electrum developers and RyleaStark"
 website: https://electrumx-spesmilo.readthedocs.io/
 dependencies:
   - extended-umbrella-litecoin-core
-repo: https://github.com/RyleaStark/umbrel-electrumx-ltc
-support: https://github.com/RyleaStark/umbrel-electrumx-ltc/issues
+repo: https://github.com/RyleaStark/umbrel-litecoin-electrumx
+support: https://github.com/RyleaStark/umbrel-litecoin-electrumx/issues
 port: 2108
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-litecoin-electrumx/gallery/icon.png
 gallery:
