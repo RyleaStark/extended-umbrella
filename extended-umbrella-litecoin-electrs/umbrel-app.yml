@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "3.4.0-dev.3752866-umbrel.11"
+version: "3.4.0-dev.3752866-umbrel.12"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
   Run a personal Electrum server for Litecoin using the maintained rust-litecoin fork of
@@ -23,10 +23,8 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Aligns the six-block indexing display with the Litecoin indexer family: provider-reported progress remains solid while
-  a fixed-position pulse moves across all six blocks only during genuine indexing. Ready and non-indexing states remain
-  static, and reduced-motion preferences disable the effect. Progress-only telemetry, Warn-level logging, the electrs-v3
-  index, provider contract, and wallet port 51001 remain unchanged.
+  Reports Electrs-owned transaction and history indexing phases without treating Litecoin Core txindex as provider
+  progress, while keeping the public Electrum listener authoritative for readiness.
 backupIgnore:
   - data/electrs
   - data/electrs-v3

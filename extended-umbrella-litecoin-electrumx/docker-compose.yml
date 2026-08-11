@@ -5,7 +5,7 @@ services:
       APP_PORT: 3008
 
   app:
-    image: ghcr.io/ryleastark/umbrel-litecoin-electrumx-gui:v1.0.7@sha256:d3ae0cbb96dfdaba17ea89f51b154014a9d39d8d877c8402505b82a7c52fd6c7
+    image: ghcr.io/ryleastark/umbrel-litecoin-electrumx-gui:v1.0.8@sha256:15124b0d35881037eed538b6cedf8122ace8de22e0bd5b525ab83947ede6e389
     depends_on:
       - electrumx
     restart: on-failure

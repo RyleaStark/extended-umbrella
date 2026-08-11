@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.11 — 2026-08-10
+
+- Uses private ElectrumX admin database and daemon heights for provider-owned indexing progress.
+- Treats `db height = -1` as valid empty-database preparation and rejects database heights ahead of the daemon.
+- Requires a successful public `server.version` query before reporting synchronized readiness.
+- Preserves Litecoin's exact runtime contract without importing Bitcoin-only Core index prerequisites, and pins GUI release `v1.0.8`.
+
 ## 2.0.0-umbrel.10 — 2026-08-10
 
 - Smooth the six-block indexing handoff into the completed state without moving block positions.
