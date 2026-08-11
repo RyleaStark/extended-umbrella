@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.15 — 2026-08-10
+
+- Validates Litecoin Core txindex as a separate prerequisite instead of presenting it as Fulcrum indexing progress.
+- Uses Fulcrum-owned stats or fresh complete UTC log records only for incomplete provider progress; logs never establish readiness.
+- Rejects stale, future, malformed, partial, equal-to-Core, and ahead-of-Core fallback markers.
+- Pins Fulcrum log timestamps to UTC and the immutable multi-architecture GUI release `v1.0.10`.
+
 ## 2.1.1-umbrel.14 — 2026-08-10
 
 - Smooth the six-block indexing handoff into the completed state without moving block positions.

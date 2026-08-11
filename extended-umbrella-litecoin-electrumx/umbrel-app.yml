@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "ElectrumX (LTC)"
-version: "2.0.0-umbrel.10"
+version: "2.0.0-umbrel.11"
 tagline: "A lightweight Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by ElectrumX 2.0 and Litecoin Core.
@@ -12,10 +12,8 @@ description: >-
   your local network or Tor. ElectrumX (LTC) is an independent indexer and can satisfy
   the same Electrs (LTC) capability used by compatible applications such as Litecoin Space.
 releaseNotes: >-
-  Aligns the six-block indexing display with the Litecoin indexer family: provider-reported progress remains solid while
-  a fixed-position pulse moves across all six blocks only during genuine indexing. Ready and non-indexing states remain
-  static, and reduced-motion preferences disable the effect. The hardened daemon, wallet port 51003, and private admin
-  RPC 8000 remain unchanged.
+  Uses ElectrumX admin database and daemon heights for progress, accepts the empty-database sentinel, rejects ahead-of-daemon
+  state, and requires the public listener for readiness.
 developer: "Electrum developers and RyleaStark"
 website: https://electrumx-spesmilo.readthedocs.io/
 dependencies:
@@ -35,4 +33,4 @@ backupIgnore:
   - data/electrumx/meta
   - data/electrumx/hist
 submitter: "Rylea Stark"
-submission: https://github.com/RyleaStark/extended-umbrella
+submission: https://github.com/RyleaStark/extended-umbrella/pull/28

@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.12 — 2026-08-10
+
+- Exposes Electrs' private monitoring listener only on the app network so the GUI can distinguish active transaction-index and history-index phases while the public Electrum listener remains closed.
+- Keeps the public provider listener authoritative for readiness; monitoring telemetry cannot produce a synchronized state or a fabricated percentage.
+- Pins the immutable multi-architecture GUI release `v1.0.12`.
+
 ## 3.4.0-dev.3752866-umbrel.11 — 2026-08-10
 
 - Smooth the six-block indexing handoff into the completed state without moving block positions.

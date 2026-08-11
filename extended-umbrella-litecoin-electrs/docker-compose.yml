@@ -5,7 +5,7 @@ services:
       APP_PORT: 3006
 
   app:
-    image: ghcr.io/ryleastark/umbrel-litecoin-electrs-gui:v1.0.11@sha256:63787f06180d986972741030cd154eebbda720cb1c3b0fb141d769a0e5cf8bd5
+    image: ghcr.io/ryleastark/umbrel-litecoin-electrs-gui:v1.0.12@sha256:f6ff41659e2cd0a3c9e7f7d2b5fe674ae83739bd110efb6456416514c2a07075
     depends_on: [electrs]
     restart: on-failure
     environment:
@@ -13,6 +13,8 @@ services:
       ELECTRUM_LOCAL_SERVICE: "${DEVICE_DOMAIN_NAME}"
       ELECTRS_HOST: "${APP_LITECOIN_ELECTRS_NODE_IP}"
       ELECTRS_PORT: "${APP_LITECOIN_ELECTRS_NODE_PORT}"
+      ELECTRS_MONITORING_HOST: "${APP_LITECOIN_ELECTRS_NODE_IP}"
+      ELECTRS_MONITORING_PORT: "4224"
       ELECTRS_PROGRESS_PORT: "5514"
       ELECTRUM_PORT: "${APP_LITECOIN_ELECTRS_NODE_PORT}"
       LITECOIN_HOST: "${APP_LITECOIN_NODE_IP}"
@@ -31,6 +33,8 @@ services:
     command:
       - -v
       - --index-progress-stderr
+      - --monitoring-addr
+      - "0.0.0.0:4224"
       - --network
       - mainnet
       - --daemon-rpc-addr
