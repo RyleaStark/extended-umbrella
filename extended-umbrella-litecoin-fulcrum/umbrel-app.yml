@@ -28,4 +28,4 @@ releaseNotes: >-
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"
-submission: https://github.com/RyleaStark/extended-umbrella
+submission: https://github.com/RyleaStark/extended-umbrella/pull/28
