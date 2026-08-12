@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -24,7 +24,7 @@ services:
     restart: "no"
 
   permissions-init:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
     container_name: ${APP_ID}_permissions-init
     depends_on:
       state_migrate:
@@ -47,6 +47,8 @@ services:
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app-secrets/cloudflare-mesh
       - ${APP_DATA_DIR}/data/secrets/tailscale:/tailscale-control
       - ${APP_DATA_DIR}/data/connectors/tailscale:/tailscale-state
+      - ${APP_DATA_DIR}/data/secrets/zrok:/zrok-control
+      - ${APP_DATA_DIR}/data/connectors/zrok:/zrok-state
       - ${APP_DATA_DIR}/data/public-backend:/public-socket
       - ${APP_DATA_DIR}/data/proxy-config:/proxy-config
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh-state:/cloudflare-mesh-state
@@ -67,7 +69,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
@@ -106,6 +108,9 @@ services:
       TAILSCALE_CONNECTOR_ENABLED: "true"
       TAILSCALE_CONTROL_DIR: "/app/secrets/tailscale/control"
       TAILSCALE_STATUS_DIR: "/app/secrets/tailscale/status"
+      ZROK_CONNECTOR_ENABLED: "true"
+      ZROK_CONTROL_DIR: "/app/secrets/zrok/control"
+      ZROK_STATUS_DIR: "/app/secrets/zrok/status"
     volumes:
       - ${APP_LIGHTNING_NODE_DATA_DIR}/tls.cert:/lnd/tls.cert:ro
       - ${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/invoice.macaroon:/lnd/invoice.macaroon:ro
@@ -125,7 +130,7 @@ services:
       start_period: 20s
 
   lnswitchboard-public:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
     container_name: ${APP_ID}_public
     user: "1000:1000"
     restart: on-failure
@@ -155,6 +160,9 @@ services:
         aliases:
           - lnswitchboard-public
           - lns.internal
+      zrok-public:
+        aliases:
+          - public
     healthcheck:
       test:
         - CMD
@@ -243,6 +251,40 @@ services:
       retries: 3
       start_period: 10s
 
+  zrok:
+    image: openziti/zrok2:2.0.4@sha256:310ab634172ce03dd23ff1ee8515195e1a564197dbc4e6cdfd57dad2fb822400
+    container_name: ${APP_ID}_zrok
+    entrypoint: ["/usr/local/bin/lnswitchboard-zrok-supervisor"]
+    user: "1000:1000"
+    restart: on-failure
+    stop_grace_period: 30s
+    depends_on:
+      permissions-init:
+        condition: service_completed_successfully
+      lnswitchboard-public:
+        condition: service_healthy
+    read_only: true
+    mem_limit: 128m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOME: /var/lib/zrok
+      ZROK2_HEADLESS: "true"
+      ZROK_CONTROL_DIR: /run/lnswitchboard/control
+      ZROK_STATUS_DIR: /run/lnswitchboard/status
+    volumes:
+      - ${APP_DATA_DIR}/data/connectors/zrok:/var/lib/zrok
+      - ${APP_DATA_DIR}/data/secrets/zrok:/run/lnswitchboard
+      - ${APP_DATA_DIR}/hooks/zrok-supervisor.sh:/usr/local/bin/lnswitchboard-zrok-supervisor:ro
+    networks:
+      - zrok-public
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+
 networks:
   cloudflare-egress:
+    driver: bridge
+  zrok-public:
     driver: bridge

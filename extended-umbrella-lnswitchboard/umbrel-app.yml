@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc22-umbrel.3"
+version: "0.4.0.rc23-umbrel.1"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  Makes recovery of interrupted App Proxy privacy-config publications descriptor-bound, crash-recoverable, and fail-closed against final pathname replacement. Legacy SQLite journal/WAL/SHM compatibility-link retirement has the same protected recovery contract. Preserves historical and interim records across upgrades, rollbacks, and re-upgrades with a durable manifest binding every database, key, SQLite sidecar, and archive. RC22 separates the authenticated administration service from a bounded secretless public gateway connected over a hardened Unix socket; only port 21212 reaches public LNURL and NIP-05 routes, while administrative authority remains confined to the administration process.
+  Adds zrok as a third public-ingress provider with both managed zrok Cloud and self-hosted environment modes. zrok receives only the secretless public listener on port 21212, with dedicated enrollment and runtime state; the dashboard and administrative authority remain private on port 22121. Cloud setup uses a persistent reserved name and warns that account verification is required to remove zrok's browser interstitial for Lightning and NIP-05 machine clients. Includes the RC22 persistence, recovery, and listener-isolation hardening.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9'
 RC21_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc21@sha256:36d07b3f077b29f923a91a7a6b071c5a0c98b928d239e140902c941764f0f765'
 FIXTURE=$(mktemp -d)
 ROOT="$FIXTURE/state"

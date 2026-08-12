@@ -18,6 +18,8 @@ MOUNTS = (
     (Path("connectors/cloudflare-mesh"), Path("/app-secrets/cloudflare-mesh")),
     (Path("secrets/tailscale"), Path("/tailscale-control")),
     (Path("connectors/tailscale"), Path("/tailscale-state")),
+    (Path("secrets/zrok"), Path("/zrok-control")),
+    (Path("connectors/zrok"), Path("/zrok-state")),
     (Path("public-backend"), Path("/public-socket")),
     (Path("proxy-config"), Path("/proxy-config")),
     (Path("connectors/cloudflare-mesh-state"), Path("/cloudflare-mesh-state")),
@@ -117,6 +119,10 @@ def main() -> None:
         os.fchown(mesh_state_fd, 0, 0)
         os.fchmod(mesh_state_fd, 0o700)
         write_proxy_config(direct_fds[Path("/proxy-config")])
+        for path in (Path("/zrok-control"), Path("/zrok-state")):
+            directory_fd = direct_fds[path]
+            os.fchown(directory_fd, 1000, 1000)
+            os.fchmod(directory_fd, 0o750)
     finally:
         os.close(host_root_fd)
         for descriptor in direct_fds.values():
