@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc25@sha256:1085582e9220532f62c7a00214ea0caccbc670260a56deaa28d34766dd16907c'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -12,10 +12,10 @@ import re, sys, yaml
 root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
-assert manifest['version'] == '0.4.0.rc23-umbrel.1'
+assert manifest['version'] == '0.4.0.rc25-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc25@sha256:1085582e9220532f62c7a00214ea0caccbc670260a56deaa28d34766dd16907c'
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 mesh = compose['services']['cloudflare-mesh']
 assert mesh['image'] == 'cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
@@ -155,8 +155,8 @@ print('GREEN exact_rc23_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = 'db9a85cfcf4c268683ea98fc32546882187dcd82' ]
-echo 'GREEN exact_rc23_source_revision_ok'
+[ "$app_revision" = 'afc9fab6c9c88552a51f75a0f9fff06b5d0bcfc2' ]
+echo 'GREEN exact_rc25_source_revision_ok'
 
 docker run --rm -i \
   -e DEP_ENV=DOCKER \

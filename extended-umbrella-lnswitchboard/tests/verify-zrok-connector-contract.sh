@@ -20,10 +20,11 @@ script=(p/'hooks/zrok-supervisor.sh').read_text()
 assert 'TARGET=http://public:21212' in script
 assert ':22121' not in script
 assert 'ZROK2_API_ENDPOINT="$endpoint"' in script
-assert '--open --subordinate --force-local' in script
+assert '--open --headless --subordinate --force-local' in script
 assert 'operation_id' in script
 assert 'share_token:' not in script
-assert 'trap shutdown EXIT TERM INT' in script
+assert 'trap shutdown TERM INT' in script
+assert '"https://" + ascii_downcase' in script
 print('GREEN zrok connector authority contract')
 PY
 bash -n "$PACKAGE_DIR/hooks/zrok-supervisor.sh"
