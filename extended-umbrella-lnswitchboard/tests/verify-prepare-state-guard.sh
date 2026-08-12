@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc22@sha256:00c90371af0e20df84752b0ec52718ab8fc877baa1cafe3260d7b8cecd629f53'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9'
 FIXTURE=$(mktemp -d)
 cleanup() {
   docker run --rm -v "$FIXTURE:/fixture" \
@@ -19,6 +19,8 @@ mkdir -p \
   "$HOST/connectors/cloudflare-mesh" \
   "$HOST/connectors/cloudflare-mesh-state" \
   "$HOST/connectors/tailscale" \
+  "$HOST/secrets/zrok" \
+  "$HOST/connectors/zrok" \
   "$HOST/public-backend" \
   "$HOST/proxy-config" \
   "$OUTSIDE"
@@ -35,6 +37,8 @@ run_guard() {
     -v "$HOST/connectors/cloudflare-mesh:/app-secrets/cloudflare-mesh" \
     -v "$HOST/secrets/tailscale:/tailscale-control" \
     -v "$HOST/connectors/tailscale:/tailscale-state" \
+    -v "$HOST/secrets/zrok:/zrok-control" \
+    -v "$HOST/connectors/zrok:/zrok-state" \
     -v "$HOST/public-backend:/public-socket" \
     -v "$HOST/proxy-config:/proxy-config" \
     -v "$HOST/connectors/cloudflare-mesh-state:/cloudflare-mesh-state" \

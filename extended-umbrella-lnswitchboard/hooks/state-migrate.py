@@ -45,6 +45,8 @@ PRIVILEGED_MOUNT_SOURCES = (
     Path("connectors/cloudflare-mesh"),
     Path("connectors/cloudflare-mesh-state"),
     Path("connectors/tailscale"),
+    Path("secrets/zrok"),
+    Path("connectors/zrok"),
 )
 EXCLUDED = {
     "secrets",
