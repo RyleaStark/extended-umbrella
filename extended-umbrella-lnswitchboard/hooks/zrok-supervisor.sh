@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-umask 027
+umask 077
 CONTROL=${ZROK_CONTROL_DIR:-/run/lnswitchboard/control}
 STATUS=${ZROK_STATUS_DIR:-/run/lnswitchboard/status}
 TARGET=http://public:21212
+ACTIVE=${ZROK_ACTIVE_FILE:-$HOME/.lnswitchboard-active.json}
 mkdir -p "$STATUS"
 share_pid=
 operation_id=recovery
@@ -14,6 +15,15 @@ atomic_status() {
     '$payload + {state:$state,operation_id:$operation_id}' >"$tmp"
   chmod 640 "$tmp"
   mv -f "$tmp" "$STATUS/status.json"
+}
+
+atomic_active() {
+  local phase=$1 namespace=$2 name=$3 share_token=${4:-} tmp="${ACTIVE}.tmp.${BASHPID}"
+  jq -cn --arg phase "$phase" --arg namespace "$namespace" --arg name "$name" \
+    --arg share_token "$share_token" --arg operation_id "$operation_id" \
+    '{phase:$phase,namespace:$namespace,name:$name,share_token:$share_token,operation_id:$operation_id}' >"$tmp"
+  chmod 600 "$tmp"
+  mv -f "$tmp" "$ACTIVE"
 }
 
 stop_share() {
@@ -29,15 +39,23 @@ enabled() { zrok2 status 2>/dev/null | grep -q 'EnvZId.*<<SET>>'; }
 share_alive() { [ -n "${share_pid:-}" ] && jobs -pr | grep -qx "$share_pid"; }
 
 name_exists() {
-  local namespace=$1 name=$2
-  local names
+  local namespace=$1 name=$2 names
   names=$(zrok2 list names --namespace-token "$namespace" --json 2>/dev/null) || return 2
   jq -e --arg namespace "$namespace" --arg name "$name" \
     'any(.[]; .namespaceToken == $namespace and .name == $name)' <<<"$names" >/dev/null
 }
 
+cleanup_fixed_shares() {
+  local shares token
+  shares=$(zrok2 list shares --share-mode public --target "$TARGET" --json 2>/dev/null) || return 1
+  while IFS= read -r token; do
+    [ -n "$token" ] || continue
+    zrok2 delete share "$token" >/dev/null 2>&1 || return 1
+  done < <(jq -r --arg target "$TARGET" '.shares[]? | select(.target == $target) | .shareToken' <<<"$shares")
+}
+
 start_share() {
-  local namespace=$1 name=$2 fifo deadline state endpoints
+  local namespace=$1 name=$2 fifo deadline state endpoints share_token
   stop_share
   rm -f "$STATUS/status.json"
   fifo="$STATUS/share.$$"
@@ -48,13 +66,15 @@ start_share() {
       if [ "$first" = 1 ]; then
         first=0
         if jq -e '
-          .msg == "boot" and
+          .msg == "boot" and (.token | type == "string" and length >= 1 and length <= 4096) and
           (.frontend_endpoints | type == "array" and length >= 1 and length <= 8) and
           all(.frontend_endpoints[];
             type == "string" and length >= 1 and length <= 253 and
             test("^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$"))
         ' <<<"$boot" >/dev/null; then
+          share_token=$(jq -er '.token' <<<"$boot")
           endpoints=$(jq -c '{frontend_endpoints:[.frontend_endpoints[] | "https://" + ascii_downcase]}' <<<"$boot")
+          atomic_active active "$namespace" "$name" "$share_token"
           atomic_status connected "$endpoints"
         else
           atomic_status error
@@ -63,7 +83,7 @@ start_share() {
     done <"$fifo"
   ) &
   local drain_pid=$!
-  zrok2 share public "$TARGET" --backend-mode proxy --open --headless --subordinate --force-local \
+  zrok2 share public "$TARGET" --backend-mode proxy --open --subordinate --force-local \
     --name-selection "$namespace:$name" >"$fifo" 2>/dev/null &
   share_pid=$!
   deadline=$((SECONDS + 30))
@@ -94,11 +114,8 @@ configure() {
   payload=
   stop_share
   if enabled; then
-    if ! zrok2 disable >/dev/null 2>&1; then
-      atomic_status error
-      token=
-      return 1
-    fi
+    cleanup_fixed_shares || { atomic_status error; token=; return 1; }
+    zrok2 disable >/dev/null 2>&1 || { atomic_status error; token=; return 1; }
   fi
   if ! ZROK2_API_ENDPOINT="$endpoint" zrok2 enable --headless --description lnswitchboard "$token" >/dev/null 2>&1; then
     token=
@@ -110,56 +127,36 @@ configure() {
     :
   else
     local name_status=$?
-    if [ "$name_status" = 2 ]; then
-      zrok2 disable >/dev/null 2>&1 || true
-      atomic_status error
-      return 1
-    fi
-    if ! zrok2 create name --namespace-token "$namespace" "$name" >/dev/null 2>&1; then
+    if [ "$name_status" = 2 ] || ! zrok2 create name --namespace-token "$namespace" "$name" >/dev/null 2>&1; then
       zrok2 disable >/dev/null 2>&1 || true
       atomic_status error
       return 1
     fi
     created=true
   fi
+  atomic_active starting "$namespace" "$name"
   if ! start_share "$namespace" "$name"; then
-    if [ "$created" = true ]; then
-      zrok2 delete name --namespace-token "$namespace" "$name" >/dev/null 2>&1 || true
-    fi
+    if [ "$created" = true ]; then zrok2 delete name --namespace-token "$namespace" "$name" >/dev/null 2>&1 || true; fi
     zrok2 disable >/dev/null 2>&1 || true
     return 1
   fi
-  printf '{"namespace":%s,"name":%s}\n' \
-    "$(jq -Rn --arg value "$namespace" '$value')" \
-    "$(jq -Rn --arg value "$name" '$value')" >"$CONTROL/.active.json.tmp.$$"
-  chmod 640 "$CONTROL/.active.json.tmp.$$"
-  mv -f "$CONTROL/.active.json.tmp.$$" "$CONTROL/active.json"
 }
 
 disconnect() {
   local namespace name
   operation_id=$(cat "$CONTROL/disconnect")
   rm -f "$CONTROL/disconnect"
-  namespace=$(jq -er '.namespace' "$CONTROL/active.json") || { atomic_status error; return 1; }
-  name=$(jq -er '.name' "$CONTROL/active.json") || { atomic_status error; return 1; }
+  if [ ! -f "$ACTIVE" ] && ! enabled; then atomic_status disconnected; return 0; fi
+  namespace=$(jq -er '.namespace' "$ACTIVE") || { atomic_status error; return 1; }
+  name=$(jq -er '.name' "$ACTIVE") || { atomic_status error; return 1; }
+  atomic_active cleanup "$namespace" "$name" "$(jq -r '.share_token // ""' "$ACTIVE")"
   stop_share
+  cleanup_fixed_shares || { atomic_status error; return 1; }
   if name_exists "$namespace" "$name"; then
-    if ! zrok2 delete name --namespace-token "$namespace" "$name" >/dev/null 2>&1; then
-      atomic_status error
-      return 1
-    fi
-  else
-    local name_status=$?
-    if [ "$name_status" = 2 ]; then
-      atomic_status error
-      return 1
-    fi
-  fi
-  if ! zrok2 disable >/dev/null 2>&1; then
-    atomic_status error
-    return 1
-  fi
-  rm -f "$CONTROL/configure.json" "$CONTROL/active.json"
+    zrok2 delete name --namespace-token "$namespace" "$name" >/dev/null 2>&1 || { atomic_status error; return 1; }
+  elif [ "$?" = 2 ]; then atomic_status error; return 1; fi
+  zrok2 disable >/dev/null 2>&1 || { atomic_status error; return 1; }
+  rm -f "$ACTIVE"
   atomic_status disconnected
 }
 
@@ -175,16 +172,24 @@ refresh() {
 
 trap shutdown TERM INT
 trap stop_share EXIT
-if [ -f "$CONTROL/active.json" ] && enabled; then
-  namespace=$(jq -er '.namespace' "$CONTROL/active.json")
-  name=$(jq -er '.name' "$CONTROL/active.json")
-  start_share "$namespace" "$name" || exit 1
-fi
-while true; do
-  if [ -n "${share_pid:-}" ] && ! share_alive; then
+if [ -f "$ACTIVE" ]; then
+  operation_id=$(jq -r '.operation_id // "recovery"' "$ACTIVE")
+  phase=$(jq -er '.phase' "$ACTIVE")
+  namespace=$(jq -er '.namespace' "$ACTIVE")
+  name=$(jq -er '.name' "$ACTIVE")
+  if [ "$phase" = cleanup ]; then
+    printf '%s' "$operation_id" >"$CONTROL/disconnect"
+    disconnect || exit 1
+  elif enabled; then
+    cleanup_fixed_shares || exit 1
+    start_share "$namespace" "$name" || exit 1
+  else
     atomic_status error
     exit 1
   fi
+fi
+while true; do
+  if [ -n "${share_pid:-}" ] && ! share_alive; then atomic_status error; exit 1; fi
   if [ -f "$CONTROL/disconnect" ]; then disconnect || true
   elif [ -f "$CONTROL/configure.json" ]; then configure || true
   elif [ -f "$CONTROL/refresh" ]; then refresh
