@@ -12,6 +12,9 @@ import re, sys, yaml
 root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
+test_scripts = sorted((root / 'tests').glob('*.sh'))
+assert len(test_scripts) == 32
+assert all(path.stat().st_mode & 0o111 for path in test_scripts)
 assert manifest['version'] == '0.4.0.rc26-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
