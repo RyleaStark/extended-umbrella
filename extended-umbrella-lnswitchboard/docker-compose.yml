@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc25@sha256:1085582e9220532f62c7a00214ea0caccbc670260a56deaa28d34766dd16907c
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -24,7 +24,7 @@ services:
     restart: "no"
 
   permissions-init:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc25@sha256:1085582e9220532f62c7a00214ea0caccbc670260a56deaa28d34766dd16907c
     container_name: ${APP_ID}_permissions-init
     depends_on:
       state_migrate:
@@ -69,7 +69,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc25@sha256:1085582e9220532f62c7a00214ea0caccbc670260a56deaa28d34766dd16907c
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
@@ -130,7 +130,7 @@ services:
       start_period: 20s
 
   lnswitchboard-public:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc25@sha256:1085582e9220532f62c7a00214ea0caccbc670260a56deaa28d34766dd16907c
     container_name: ${APP_ID}_public
     user: "1000:1000"
     restart: on-failure

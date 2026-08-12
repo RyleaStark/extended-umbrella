@@ -2,7 +2,7 @@
 set -euo pipefail
 PROXY_IMAGE='getumbrel/app-proxy:1.7.0@sha256:ec0de0b944a2e63d52fdd82b3760d90a35f8b442d17a8407afdee3af3e842d5a'
 ALPINE_IMAGE='alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1'
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc23@sha256:3da255d3163581809d5ad58b813de316de82e77a4e93cb997386fef14ced58f9'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc25@sha256:1085582e9220532f62c7a00214ea0caccbc670260a56deaa28d34766dd16907c'
 FIXTURE=$(mktemp -d)
 NETWORK="lns-proxy-privacy-${RANDOM}-$$"
 BACKEND="${NETWORK}-backend"
