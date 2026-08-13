@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -24,7 +24,7 @@ services:
     restart: "no"
 
   permissions-init:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d
     container_name: ${APP_ID}_permissions-init
     depends_on:
       state_migrate:
@@ -69,7 +69,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
@@ -90,7 +90,7 @@ services:
       PUBLIC_BACKEND_SOCKET_PATH: /run/lnswitchboard-public/public.sock
       SERVICE_PORT: "22121"
       PUBLIC_SERVICE_PORT: "21212"
-      DEP_ENV: "UMBREL"
+      DEP_ENV: "UMBREL_DEV"
       LND_HOST: "${APP_LIGHTNING_NODE_IP}"
       LND_GRPC_PORT: "10009"
       LND_TLS_PATH: "/lnd/tls.cert"
@@ -106,9 +106,11 @@ services:
       CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK: "${CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
       CLOUDFLARE_OAUTH_REDIRECT_PAGE: "${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://placeholder.invalid/oauth/callback}"
       TAILSCALE_CONNECTOR_ENABLED: "true"
+
       TAILSCALE_CONTROL_DIR: "/app/secrets/tailscale/control"
       TAILSCALE_STATUS_DIR: "/app/secrets/tailscale/status"
       ZROK_CONNECTOR_ENABLED: "true"
+
       ZROK_CONTROL_DIR: "/app/secrets/zrok/control"
       ZROK_STATUS_DIR: "/app/secrets/zrok/status"
     volumes:
@@ -130,7 +132,7 @@ services:
       start_period: 30s
 
   lnswitchboard-public:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d
     container_name: ${APP_ID}_public
     user: "1000:1000"
     restart: on-failure
@@ -163,6 +165,7 @@ services:
       zrok-public:
         aliases:
           - public
+      tailscale-public: {}
     healthcheck:
       test:
         - CMD
@@ -224,7 +227,8 @@ services:
         condition: service_completed_successfully
       lnswitchboard-public:
         condition: service_healthy
-    network_mode: service:lnswitchboard-public
+    networks:
+      - tailscale-public
     read_only: true
     cap_drop:
       - ALL
@@ -238,6 +242,7 @@ services:
       TS_STATUS_DIR: /run/lnswitchboard/status
       TS_LOGIN_RETENTION_SECONDS: "300"
       TS_NO_LOGS_NO_SUPPORT: "true"
+      DEP_ENV: "UMBREL_DEV"
     volumes:
       - ${APP_DATA_DIR}/data/connectors/tailscale:/var/lib/tailscale
       - ${APP_DATA_DIR}/data/secrets/tailscale:/run/lnswitchboard
@@ -274,6 +279,7 @@ services:
       ZROK2_HEADLESS: "true"
       ZROK_CONTROL_DIR: /run/lnswitchboard/control
       ZROK_STATUS_DIR: /run/lnswitchboard/status
+      DEP_ENV: "UMBREL_DEV"
     volumes:
       - ${APP_DATA_DIR}/data/connectors/zrok:/var/lib/zrok
       - ${APP_DATA_DIR}/data/secrets/zrok:/run/lnswitchboard
@@ -287,4 +293,6 @@ networks:
   cloudflare-egress:
     driver: bridge
   zrok-public:
+    driver: bridge
+  tailscale-public:
     driver: bridge
