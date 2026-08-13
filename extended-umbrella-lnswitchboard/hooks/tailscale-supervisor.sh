@@ -15,7 +15,11 @@ PROCESSING_DIR="$CONTROL_DIR/processing"
 COMPLETED_DIR="$CONTROL_DIR/completed"
 ACK_DIR="$CONTROL_DIR/acks"
 RESULT_DIR="$STATUS_DIR/results"
+LOCK_ROOT=$(dirname "$CONTROL_DIR")
 POLL_INTERVAL="${TS_POLL_INTERVAL:-2}"
+COMMAND_TIMEOUT="${TS_COMMAND_TIMEOUT:-12}"
+LOGIN_STOP_TIMEOUT="${TS_LOGIN_STOP_TIMEOUT:-2}"
+LOCK_WAIT_TIMEOUT="${TS_LOCK_WAIT_TIMEOUT:-1}"
 LOGIN_RETENTION_SECONDS="${TS_LOGIN_RETENTION_SECONDS:-300}"
 COMPLETED_RETENTION_SECONDS="${TS_COMPLETED_RETENTION_SECONDS:-2592000}"
 COMPLETED_MAX_RECORDS="${TS_COMPLETED_MAX_RECORDS:-4096}"
@@ -41,22 +45,57 @@ case "$COMPLETED_RETENTION_SECONDS:$COMPLETED_MAX_RECORDS" in
         exit 1
         ;;
 esac
+case "$COMMAND_TIMEOUT" in
+    "" | *[!0-9]* | 0)
+        printf '%s\n' "TS_COMMAND_TIMEOUT must be a positive integer" >&2
+        exit 1
+        ;;
+esac
+case "$LOGIN_STOP_TIMEOUT" in
+    "" | *[!0-9]* | 0)
+        printf '%s\n' "TS_LOGIN_STOP_TIMEOUT must be a positive integer" >&2
+        exit 1
+        ;;
+esac
+case "$LOCK_WAIT_TIMEOUT" in
+    "" | *[!0-9]* | 0)
+        printf '%s\n' "TS_LOCK_WAIT_TIMEOUT must be a positive integer" >&2
+        exit 1
+        ;;
+esac
 
 TAILSCALED_PID=""
 LOGIN_PID=""
 LOGIN_COMPLETED_AT=""
+PROVIDER_SEQUENCE=0
 
 mkdir -p "$STATE_DIR" "$QUEUE_DIR" "$OPERATION_DIR" "$PROCESSING_DIR" "$COMPLETED_DIR" "$ACK_DIR" "$RESULT_DIR" "$(dirname "$SOCKET")"
 chmod 0700 "$CONTROL_DIR" "$STATUS_DIR" "$QUEUE_DIR" "$OPERATION_DIR" "$PROCESSING_DIR" "$COMPLETED_DIR" "$ACK_DIR" "$RESULT_DIR"
+exec 9<"$LOCK_ROOT"
 
 if [ -f "$STATUS_DIR/login.json" ]; then
     LOGIN_COMPLETED_AT=$(stat -c %Y "$STATUS_DIR/login.json" 2>/dev/null || date +%s)
 fi
 
+stop_process() {
+    process_pid=$1
+    [ -n "$process_pid" ] || return 0
+    kill -TERM "-$process_pid" 2>/dev/null || kill "$process_pid" 2>/dev/null || true
+    if ! timeout -k 1 "$LOGIN_STOP_TIMEOUT" sh -c '
+        while kill -0 "-$1" 2>/dev/null; do sleep 0.1; done
+    ' sh "$process_pid"; then
+        kill -KILL "-$process_pid" 2>/dev/null || kill -KILL "$process_pid" 2>/dev/null || true
+    fi
+    wait "$process_pid" 2>/dev/null || true
+}
+
+acquire_protocol_lock() {
+    while ! flock -xn 9; do sleep "$LOCK_WAIT_TIMEOUT"; done
+}
+
 stop_login() {
     if [ -n "$LOGIN_PID" ]; then
-        kill "$LOGIN_PID" 2>/dev/null || true
-        wait "$LOGIN_PID" 2>/dev/null || true
+        stop_process "$LOGIN_PID"
         LOGIN_PID=""
     fi
     LOGIN_COMPLETED_AT=""
@@ -65,8 +104,7 @@ stop_login() {
 stop_children() {
     stop_login
     if [ -n "$TAILSCALED_PID" ]; then
-        kill "$TAILSCALED_PID" 2>/dev/null || true
-        wait "$TAILSCALED_PID" 2>/dev/null || true
+        stop_process "$TAILSCALED_PID"
         TAILSCALED_PID=""
     fi
 }
@@ -74,13 +112,88 @@ stop_children() {
 trap 'stop_children; exit 0' TERM INT HUP
 
 start_daemon() {
-    "$TAILSCALED_BIN" \
+    setsid "$TAILSCALED_BIN" \
         --tun=userspace-networking \
         --state="$STATE_DIR/tailscaled.state" \
         --statedir="$STATE_DIR" \
         --socket="$SOCKET" \
         >/dev/null 2>/dev/null &
     TAILSCALED_PID=$!
+}
+
+process_identity() {
+    process_pid=$1
+    [ -r "/proc/$process_pid/stat" ] || return 1
+    IFS= read -r process_stat <"/proc/$process_pid/stat" || return 1
+    process_stat=${process_stat##*) }
+    set -- $process_stat
+    [ "$#" -ge 20 ] || return 1
+    process_parent=$2
+    shift 19
+    printf '%s:%s\n' "$process_parent" "$1"
+}
+
+snapshot_children() {
+    for process_dir in /proc/[0-9]*; do
+        process_pid=${process_dir#/proc/}
+        identity=$(process_identity "$process_pid") || continue
+        [ "${identity%%:*}" = "$$" ] || continue
+        printf '%s\n' "$process_pid"
+    done
+}
+
+run_tailscale() {
+    process_snapshot=""
+    if [ "$$" = 1 ]; then
+        process_snapshot=$(snapshot_children)
+    fi
+    PROVIDER_SEQUENCE=$((PROVIDER_SEQUENCE + 1))
+    provider_token="lnswitchboard-provider-$$-$(date +%s)-$PROVIDER_SEQUENCE"
+    exit_code=0
+    LNS_PROVIDER_OPERATION="$provider_token" \
+        timeout -k 5 "$COMMAND_TIMEOUT" "$TAILSCALE_BIN" "$@" || exit_code=$?
+    cleanup_provider_descendants "$provider_token" "$process_snapshot"
+    return "$exit_code"
+}
+
+cleanup_provider_descendants() {
+    provider_token=$1
+    process_snapshot=$2
+    attempts=0
+    while [ "$attempts" -lt 10 ]; do
+        found=false
+        for process_dir in /proc/[0-9]*; do
+            provider_pid=${process_dir#/proc/}
+            [ "$provider_pid" != "$$" ] || continue
+            identity=$(process_identity "$provider_pid") || continue
+            process_parent=${identity%%:*}
+            start_time=${identity#*:}
+            should_kill=false
+            if [ "$$" = 1 ]; then
+                [ "$process_parent" = "$$" ] || continue
+                case "
+$process_snapshot
+" in
+                    *"
+$provider_pid
+"*) ;;
+                    *) should_kill=true ;;
+                esac
+            elif [ -r "$process_dir/environ" ] && tr '\000' '\n' <"$process_dir/environ" 2>/dev/null \
+                | grep -Fxq "LNS_PROVIDER_OPERATION=$provider_token"; then
+                should_kill=true
+            fi
+            [ "$should_kill" = true ] || continue
+            [ "$(process_identity "$provider_pid" 2>/dev/null || true)" = "$process_parent:$start_time" ] || continue
+            kill -KILL "$provider_pid" 2>/dev/null || true
+            found=true
+        done
+        if [ "$$" != 1 ] && [ "$found" = false ]; then
+            return 0
+        fi
+        attempts=$((attempts + 1))
+        sleep 0.1
+    done
 }
 
 sync_path() {
@@ -134,7 +247,7 @@ publish_node_status() {
     destination="$STATUS_DIR/node.json"
     temporary="$destination.tmp.$$"
     raw_status=""
-    if raw_status=$("$TAILSCALE_BIN" --socket="$SOCKET" status --json --peers=false 2>/dev/null); then
+    if raw_status=$(run_tailscale --socket="$SOCKET" status --json --peers=false 2>/dev/null); then
         printf '%s\n' "$raw_status" | sed -E \
             -e 's/"AuthURL"[[:space:]]*:[[:space:]]*"[^"]*"[[:space:]]*,[[:space:]]*//' \
             -e 's/,[[:space:]]*"AuthURL"[[:space:]]*:[[:space:]]*"[^"]*"//' \
@@ -225,7 +338,7 @@ read_claimed_command() {
 
 fresh_runtime_identity() {
     live_status="$STATUS_DIR/identity.json.tmp.$$"
-    if ! "$TAILSCALE_BIN" --socket="$SOCKET" status --json --peers=false \
+    if ! run_tailscale --socket="$SOCKET" status --json --peers=false \
         >"$live_status" 2>/dev/null; then
         rm -f "$live_status"
         return 1
@@ -246,7 +359,7 @@ begin_login() {
     fi
     stop_login
     rm -f "$STATUS_DIR/login.json"
-    "$TAILSCALE_BIN" --socket="$SOCKET" up --json --reset \
+    setsid "$TAILSCALE_BIN" --socket="$SOCKET" up --json --reset \
         --hostname="$DEVICE_NAME" --accept-dns=false \
         >"$STATUS_DIR/login.json" 2>/dev/null &
     LOGIN_PID=$!
@@ -275,7 +388,7 @@ enable_funnel() {
         publish_result enable error identity_mismatch "$OPERATION_ID" "$REQUESTED_EXTERNAL_ID" "$REQUESTED_HOSTNAME"
         return
     fi
-    if "$TAILSCALE_BIN" --socket="$SOCKET" funnel --bg --yes "$FUNNEL_TARGET" >/dev/null 2>/dev/null; then
+    if run_tailscale --socket="$SOCKET" funnel --bg --yes "$FUNNEL_TARGET" >/dev/null 2>/dev/null; then
         persist_active_identity
         publish_result enable complete "" "$OPERATION_ID" "$REQUESTED_EXTERNAL_ID" "$REQUESTED_HOSTNAME"
     else
@@ -288,7 +401,7 @@ disable_funnel() {
         publish_result disable error identity_mismatch "$OPERATION_ID" "$REQUESTED_EXTERNAL_ID" "$REQUESTED_HOSTNAME"
         return
     fi
-    if "$TAILSCALE_BIN" --socket="$SOCKET" funnel reset >/dev/null 2>/dev/null; then
+    if run_tailscale --socket="$SOCKET" funnel reset >/dev/null 2>/dev/null; then
         persist_active_identity
         publish_result disable complete "" "$OPERATION_ID" "$REQUESTED_EXTERNAL_ID" "$REQUESTED_HOSTNAME"
     else
@@ -327,7 +440,7 @@ resume_disconnect() {
     # Intent phases are written before each side effect. Replaying reset/logout
     # is safe, so a crash after the provider call cannot strand the operation.
     if [ "$phase" = funnel_disabling ]; then
-        if ! "$TAILSCALE_BIN" --socket="$SOCKET" funnel reset >/dev/null 2>/dev/null; then
+        if ! run_tailscale --socket="$SOCKET" funnel reset >/dev/null 2>/dev/null; then
             publish_result disconnect error funnel_disable_failed "$OPERATION_ID" "$REQUESTED_EXTERNAL_ID" "$REQUESTED_HOSTNAME"
             return
         fi
@@ -339,12 +452,12 @@ resume_disconnect() {
         phase=provider_logging_out
     fi
     if [ "$phase" = provider_logging_out ]; then
-        if ! "$TAILSCALE_BIN" --socket="$SOCKET" logout >/dev/null 2>/dev/null; then
+        if ! run_tailscale --socket="$SOCKET" logout >/dev/null 2>/dev/null; then
             # A successful logout followed by a crash is observed as NeedsLogin.
             # This is accepted only with the durable, previously identity-bound
             # provider_logging_out intent—not from status or active metadata alone.
             logout_status="$STATUS_DIR/logout-status.json.tmp.$$"
-            if ! "$TAILSCALE_BIN" --socket="$SOCKET" status --json --peers=false >"$logout_status" 2>/dev/null \
+            if ! run_tailscale --socket="$SOCKET" status --json --peers=false >"$logout_status" 2>/dev/null \
                 || [ "$(json_string_field BackendState "$logout_status")" != NeedsLogin ]; then
                 rm -f "$logout_status"
                 publish_result disconnect error logout_failed "$OPERATION_ID" "$REQUESTED_EXTERNAL_ID" "$REQUESTED_HOSTNAME"
@@ -363,8 +476,7 @@ resume_disconnect() {
         stop_login
         rm -f "$STATUS_DIR/login.json"
         if [ -n "$TAILSCALED_PID" ]; then
-            kill "$TAILSCALED_PID" 2>/dev/null || true
-            wait "$TAILSCALED_PID" 2>/dev/null || true
+            stop_process "$TAILSCALED_PID"
             TAILSCALED_PID=""
         fi
         find "$STATE_DIR" -mindepth 1 -maxdepth 1 \
@@ -477,8 +589,9 @@ consume_results() {
     for acknowledgement in "$ACK_DIR"/*.ack; do
         [ -f "$acknowledgement" ] || continue
         operation_id=$(basename "$acknowledgement" .ack)
+        acknowledgement_value=$(tr -d '\r\n' <"$acknowledgement")
         if valid_operation_id "$operation_id" \
-            && [ "$(tr -d '\r\n' <"$acknowledgement")" = "$operation_id" ]; then
+            && [ "$acknowledgement_value" = "$operation_id" ]; then
             if [ -f "$OPERATION_DIR/$operation_id.json" ] \
                 && [ ! -f "$COMPLETED_DIR/$operation_id.json" ]; then
                 atomic_text "$COMPLETED_DIR/$operation_id.json" \
@@ -495,13 +608,33 @@ consume_results() {
 claim_next_command() {
     for command_path in "$PROCESSING_DIR"/*.json; do
         [ -f "$command_path" ] || continue
+        operation_id=$(basename "$command_path" .json)
+        if [ -f "$COMPLETED_DIR/$operation_id.json" ] \
+            || [ -f "$RESULT_DIR/$operation_id.json" ] \
+            || [ -f "$ACK_DIR/$operation_id.ack" ]; then
+            durable_remove "$command_path"
+            continue
+        fi
         process_claim "$command_path"
         return
     done
     for command_path in "$QUEUE_DIR"/*.json; do
         [ -f "$command_path" ] || continue
+        operation_id=$(basename "$command_path" .json)
+        if [ -f "$COMPLETED_DIR/$operation_id.json" ] \
+            || [ -f "$RESULT_DIR/$operation_id.json" ] \
+            || [ -f "$ACK_DIR/$operation_id.ack" ]; then
+            durable_remove "$command_path"
+            continue
+        fi
         claimed="$PROCESSING_DIR/$(basename "$command_path")"
         if durable_move "$command_path" "$claimed" 2>/dev/null; then
+            if [ -f "$COMPLETED_DIR/$operation_id.json" ] \
+                || [ -f "$RESULT_DIR/$operation_id.json" ] \
+                || [ -f "$ACK_DIR/$operation_id.ack" ]; then
+                durable_remove "$claimed"
+                continue
+            fi
             process_claim "$claimed"
         fi
         return
@@ -518,8 +651,10 @@ expire_login_artifact() {
 }
 
 start_daemon
+acquire_protocol_lock
 recover_disconnect_journals
 recover_operation_records
+flock -u 9
 
 while :; do
     if ! kill -0 "$TAILSCALED_PID" 2>/dev/null; then
@@ -532,14 +667,16 @@ while :; do
         LOGIN_COMPLETED_AT=$(date +%s)
     fi
     expire_login_artifact
+    acquire_protocol_lock
     consume_results
     recover_disconnect_journals
     recover_operation_records
     cleanup_completed_operations
     claim_next_command
+    flock -u 9
     publish_node_status
     publish_command "$STATUS_DIR/funnel.json" \
-        "$TAILSCALE_BIN" --socket="$SOCKET" funnel status --json
+        run_tailscale --socket="$SOCKET" funnel status --json
     sleep "$POLL_INTERVAL" &
     wait $! 2>/dev/null || true
 done

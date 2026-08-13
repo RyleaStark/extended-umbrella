@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0.rc31-umbrel.1 — 2026-08-13
+
+- Pin immutable multi-architecture lnSwitchboard RC31 image `sha256:2269585f8b6f98ba0bef06ed57878fa3acf070ccc368ee9f990122a560659859`.
+- Add durable, operation-correlated Tailscale lifecycle recovery with identity-bound destructive operations and observational refresh.
+- Keep Cloudflare, Tailscale Funnel, and zrok isolated to the public listener on port 21212 while App Proxy retains private administration on port 22121.
+- Include the RC31 navigation, flattened page, unified address-creation, provider copy, request-log, and badge UI updates.
+
 ## 0.4.0.rc30-umbrel.1 — 2026-08-12
 
 - Reconcile Refresh status with provider-native zrok share inventory for the exact environment, public target, proxy mode, and expected endpoint.
