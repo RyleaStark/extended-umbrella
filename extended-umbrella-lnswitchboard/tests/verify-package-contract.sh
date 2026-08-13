@@ -15,10 +15,12 @@ manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
 assert len(test_scripts) == 32
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc26-umbrel.1'
+assert manifest['version'] == '0.4.0.rc26-umbrel.2'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
 assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d'
+assert app['healthcheck']['start_period'] == '30s'
+assert app['healthcheck']['retries'] == 12
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 mesh = compose['services']['cloudflare-mesh']
 assert mesh['image'] == 'cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
