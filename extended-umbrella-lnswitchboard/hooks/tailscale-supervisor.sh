@@ -12,6 +12,7 @@ STATUS_DIR="${TS_STATUS_DIR:-/run/lnswitchboard/status}"
 QUEUE_DIR="$CONTROL_DIR/queue"
 OPERATION_DIR="$CONTROL_DIR/operations"
 PROCESSING_DIR="$CONTROL_DIR/processing"
+COMPLETED_DIR="$CONTROL_DIR/completed"
 ACK_DIR="$CONTROL_DIR/acks"
 RESULT_DIR="$STATUS_DIR/results"
 POLL_INTERVAL="${TS_POLL_INTERVAL:-2}"
@@ -37,8 +38,8 @@ TAILSCALED_PID=""
 LOGIN_PID=""
 LOGIN_COMPLETED_AT=""
 
-mkdir -p "$STATE_DIR" "$QUEUE_DIR" "$OPERATION_DIR" "$PROCESSING_DIR" "$ACK_DIR" "$RESULT_DIR" "$(dirname "$SOCKET")"
-chmod 0700 "$CONTROL_DIR" "$STATUS_DIR" "$QUEUE_DIR" "$OPERATION_DIR" "$PROCESSING_DIR" "$ACK_DIR" "$RESULT_DIR"
+mkdir -p "$STATE_DIR" "$QUEUE_DIR" "$OPERATION_DIR" "$PROCESSING_DIR" "$COMPLETED_DIR" "$ACK_DIR" "$RESULT_DIR" "$(dirname "$SOCKET")"
+chmod 0700 "$CONTROL_DIR" "$STATUS_DIR" "$QUEUE_DIR" "$OPERATION_DIR" "$PROCESSING_DIR" "$COMPLETED_DIR" "$ACK_DIR" "$RESULT_DIR"
 
 if [ -f "$STATUS_DIR/login.json" ]; then
     LOGIN_COMPLETED_AT=$(stat -c %Y "$STATUS_DIR/login.json" 2>/dev/null || date +%s)
@@ -423,17 +424,48 @@ recover_disconnect_journals() {
     done
 }
 
+recover_operation_records() {
+    for operation in "$OPERATION_DIR"/*.json; do
+        [ -f "$operation" ] || continue
+        operation_id=$(basename "$operation" .json)
+        valid_operation_id "$operation_id" || continue
+        [ -f "$QUEUE_DIR/$operation_id.json" ] && continue
+        [ -f "$PROCESSING_DIR/$operation_id.json" ] && continue
+        [ -f "$RESULT_DIR/$operation_id.json" ] && continue
+        [ -f "$ACK_DIR/$operation_id.ack" ] && continue
+        [ -f "$COMPLETED_DIR/$operation_id.json" ] && continue
+        if ln "$operation" "$QUEUE_DIR/$operation_id.json" 2>/dev/null; then
+            sync_path "$QUEUE_DIR"
+        fi
+    done
+}
+
+cleanup_completed_operations() {
+    for completed in "$COMPLETED_DIR"/*.json; do
+        [ -f "$completed" ] || continue
+        operation_id=$(basename "$completed" .json)
+        valid_operation_id "$operation_id" || continue
+        [ -f "$ACK_DIR/$operation_id.ack" ] && continue
+        durable_remove "$OPERATION_DIR/$operation_id.json"
+    done
+}
+
 consume_results() {
     for acknowledgement in "$ACK_DIR"/*.ack; do
         [ -f "$acknowledgement" ] || continue
         operation_id=$(basename "$acknowledgement" .ack)
         if valid_operation_id "$operation_id" \
             && [ "$(tr -d '\r\n' <"$acknowledgement")" = "$operation_id" ]; then
+            if [ -f "$OPERATION_DIR/$operation_id.json" ] \
+                && [ ! -f "$COMPLETED_DIR/$operation_id.json" ]; then
+                atomic_text "$COMPLETED_DIR/$operation_id.json" \
+                    "$(cat "$OPERATION_DIR/$operation_id.json")"
+            fi
             durable_remove "$RESULT_DIR/$operation_id.json"
             durable_remove "$STATE_DIR/.lnswitchboard-disconnect-$operation_id.json"
-            durable_remove "$OPERATION_DIR/$operation_id.json"
         fi
         durable_remove "$acknowledgement"
+        cleanup_completed_operations
     done
 }
 
@@ -464,6 +496,7 @@ expire_login_artifact() {
 
 start_daemon
 recover_disconnect_journals
+recover_operation_records
 
 while :; do
     if ! kill -0 "$TAILSCALED_PID" 2>/dev/null; then
@@ -478,6 +511,8 @@ while :; do
     expire_login_artifact
     consume_results
     recover_disconnect_journals
+    recover_operation_records
+    cleanup_completed_operations
     claim_next_command
     publish_node_status
     publish_command "$STATUS_DIR/funnel.json" \
