@@ -45,6 +45,10 @@ shutdown() { stop_share; exit 0; }
 enabled() { zrok2 status 2>/dev/null | grep -q 'EnvZId.*<<SET>>'; }
 share_alive() { [ -n "${share_pid:-}" ] && jobs -pr | grep -qx "$share_pid"; }
 
+environment_zid() {
+  jq -er '.ziti_identity | select(type == "string" and length >= 1)' "$HOME/.zrok2/environment.json"
+}
+
 name_exists() {
   local namespace=$1 name=$2 names
   names=$(zrok2 list names --namespace-token "$namespace" --json 2>/dev/null) || return 2
@@ -53,12 +57,44 @@ name_exists() {
 }
 
 cleanup_fixed_shares() {
-  local shares token
-  shares=$(zrok2 list shares --share-mode public --target "$TARGET" --json 2>/dev/null) || return 1
+  local expected_endpoints=${1:-'[]'} env_zid shares token
+  env_zid=$(environment_zid) || return 1
+  shares=$(zrok2 list shares --env-zid "$env_zid" --share-mode public --backend-mode proxy --target "$TARGET" --json 2>/dev/null) || return 1
   while IFS= read -r token; do
     [ -n "$token" ] || continue
     zrok2 delete share "$token" >/dev/null 2>&1 || return 1
-  done < <(jq -r --arg target "$TARGET" '.shares[]? | select(.target == $target) | .shareToken' <<<"$shares")
+  done < <(jq -r --arg target "$TARGET" --arg env_zid "$env_zid" --argjson expected_endpoints "$expected_endpoints" '
+    .shares[]? |
+    select(
+      .envZId == $env_zid and
+      .target == $target and
+      .shareMode == "public" and
+      .backendMode == "proxy" and
+      ($expected_endpoints == [] or ([.frontendEndpoints[] | "https://" + ascii_downcase] == $expected_endpoints))
+    ) |
+    .shareToken
+  ' <<<"$shares")
+}
+
+reconcile_active_share() {
+  local expected_endpoints=$1 env_zid shares
+  env_zid=$(environment_zid) || return 2
+  shares=$(zrok2 list shares --env-zid "$env_zid" --share-mode public --backend-mode proxy --target "$TARGET" --json 2>/dev/null) || return 2
+  jq -ce --arg target "$TARGET" --arg env_zid "$env_zid" --argjson expected_endpoints "$expected_endpoints" '
+    [
+      .shares[]? |
+      select(
+        .envZId == $env_zid and
+        .target == $target and
+        .shareMode == "public" and
+        .backendMode == "proxy" and
+        (.frontendEndpoints | type == "array") and
+        ([.frontendEndpoints[] | "https://" + ascii_downcase] == $expected_endpoints)
+      )
+    ] |
+    select(length == 1) |
+    {frontend_endpoints:([.[0].frontendEndpoints[] | "https://" + ascii_downcase])}
+  ' <<<"$shares"
 }
 
 start_share() {
@@ -110,7 +146,7 @@ start_share() {
 }
 
 configure() {
-  local cfg=$CONTROL/configure.json payload endpoint token namespace name created=false
+  local cfg=$CONTROL/configure.json payload endpoint token namespace name previous_endpoints='[]' created=false
   payload=$(cat "$cfg")
   rm -f "$cfg"
   operation_id=$(jq -er '.operation_id | select(type == "string" and length == 32)' <<<"$payload")
@@ -121,7 +157,8 @@ configure() {
   payload=
   stop_share
   if enabled; then
-    cleanup_fixed_shares || { atomic_status error; token=; return 1; }
+    if [ -f "$ACTIVE" ]; then previous_endpoints=$(jq -c '.frontend_endpoints // []' "$ACTIVE"); fi
+    cleanup_fixed_shares "$previous_endpoints" || { atomic_status error; token=; return 1; }
     zrok2 disable >/dev/null 2>&1 || { atomic_status error; token=; return 1; }
   fi
   if ! ZROK2_API_ENDPOINT="$endpoint" zrok2 enable --headless --description lnswitchboard "$token" >/dev/null 2>&1; then
@@ -143,35 +180,52 @@ configure() {
   fi
   atomic_active starting "$namespace" "$name"
   if ! start_share "$namespace" "$name"; then
-    if [ "$created" = true ]; then zrok2 delete name --namespace-token "$namespace" "$name" >/dev/null 2>&1 || true; fi
-    zrok2 disable >/dev/null 2>&1 || true
+    atomic_active cleanup "$namespace" "$name"
+    if [ "$created" = true ] && ! zrok2 delete name --namespace-token "$namespace" "$name" >/dev/null 2>&1; then
+      atomic_status error
+      return 1
+    fi
+    if ! zrok2 disable >/dev/null 2>&1; then
+      atomic_status error
+      return 1
+    fi
+    rm -f "$ACTIVE"
     return 1
   fi
 }
 
 disconnect() {
-  local namespace name
-  operation_id=$(cat "$CONTROL/disconnect")
-  rm -f "$CONTROL/disconnect"
-  if [ ! -f "$ACTIVE" ] && ! enabled; then atomic_status disconnected; return 0; fi
+  local payload namespace name requested_namespace requested_name identity
+  payload=$(cat "$CONTROL/disconnect.json")
+  rm -f "$CONTROL/disconnect.json"
+  operation_id=$(jq -er '.operation_id | select(type == "string" and length == 32)' <<<"$payload")
+  requested_namespace=$(jq -er '.namespace | select(type == "string")' <<<"$payload")
+  requested_name=$(jq -er '.name | select(type == "string")' <<<"$payload")
+  payload=
+  identity=$(jq -cn --arg namespace "$requested_namespace" --arg name "$requested_name" '{namespace:$namespace,name:$name}')
+  if [ ! -f "$ACTIVE" ] && ! enabled; then atomic_status disconnected "$identity"; return 0; fi
   namespace=$(jq -er '.namespace' "$ACTIVE") || { atomic_status error; return 1; }
   name=$(jq -er '.name' "$ACTIVE") || { atomic_status error; return 1; }
+  if [ "$namespace" != "$requested_namespace" ] || [ "$name" != "$requested_name" ]; then
+    atomic_status error "$identity"
+    return 1
+  fi
   atomic_active cleanup "$namespace" "$name" "$(jq -c '.frontend_endpoints // []' "$ACTIVE")"
   stop_share
-  cleanup_fixed_shares || { atomic_status error; return 1; }
+  cleanup_fixed_shares "$(jq -c '.frontend_endpoints // []' "$ACTIVE")" || { atomic_status error; return 1; }
   if name_exists "$namespace" "$name"; then
     zrok2 delete name --namespace-token "$namespace" "$name" >/dev/null 2>&1 || { atomic_status error; return 1; }
   elif [ "$?" = 2 ]; then atomic_status error; return 1; fi
   zrok2 disable >/dev/null 2>&1 || { atomic_status error; return 1; }
   rm -f "$ACTIVE"
-  atomic_status disconnected
+  atomic_status disconnected "$identity"
 }
 
 refresh() {
-  local endpoints
+  local active namespace name expected_endpoints provider_status identity
   operation_id=$(cat "$CONTROL/refresh")
   rm -f "$CONTROL/refresh"
-  endpoints=$(jq -c '
+  active=$(jq -c '
     select(
       (.namespace | type == "string" and length >= 1 and length <= 128) and
       (.name | type == "string" and length >= 1 and length <= 63) and
@@ -179,11 +233,19 @@ refresh() {
     ) |
     {frontend_endpoints,namespace,name}
   ' "$ACTIVE" 2>/dev/null || true)
-  if share_alive && [ -n "$endpoints" ]; then
-    atomic_status refresh_complete "$endpoints"
-  else
+  if ! share_alive || [ -z "$active" ]; then
     atomic_status error
+    return
   fi
+  namespace=$(jq -r '.namespace' <<<"$active")
+  name=$(jq -r '.name' <<<"$active")
+  expected_endpoints=$(jq -c '.frontend_endpoints' <<<"$active")
+  identity=$(jq -cn --arg namespace "$namespace" --arg name "$name" '{namespace:$namespace,name:$name}')
+  provider_status=$(reconcile_active_share "$expected_endpoints") || {
+    atomic_status error "$identity"
+    return
+  }
+  atomic_status refresh_complete "$(jq -c --arg namespace "$namespace" --arg name "$name" '. + {namespace:$namespace,name:$name}' <<<"$provider_status")"
 }
 
 trap shutdown TERM INT
@@ -194,10 +256,11 @@ if [ -f "$ACTIVE" ]; then
   namespace=$(jq -er '.namespace' "$ACTIVE")
   name=$(jq -er '.name' "$ACTIVE")
   if [ "$phase" = cleanup ]; then
-    printf '%s' "$operation_id" >"$CONTROL/disconnect"
+    jq -cn --arg operation_id "$operation_id" --arg namespace "$namespace" --arg name "$name" \
+      '{operation_id:$operation_id,namespace:$namespace,name:$name}' >"$CONTROL/disconnect.json"
     disconnect || exit 1
   elif enabled; then
-    cleanup_fixed_shares || exit 1
+    cleanup_fixed_shares "$(jq -c '.frontend_endpoints // []' "$ACTIVE")" || exit 1
     start_share "$namespace" "$name" || exit 1
   else
     atomic_status error
@@ -206,7 +269,7 @@ if [ -f "$ACTIVE" ]; then
 fi
 while true; do
   if [ -n "${share_pid:-}" ] && ! share_alive; then atomic_status error; exit 1; fi
-  if [ -f "$CONTROL/disconnect" ]; then disconnect || true
+  if [ -f "$CONTROL/disconnect.json" ]; then disconnect || true
   elif [ -f "$CONTROL/configure.json" ]; then configure || true
   elif [ -f "$CONTROL/refresh" ]; then refresh
   fi

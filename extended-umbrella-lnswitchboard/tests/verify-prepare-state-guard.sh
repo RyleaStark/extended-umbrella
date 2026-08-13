@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc29@sha256:c9ffacd79b51f75f18dbf6eca238fad660f3fe264a1176ae5d3953f6d4758a24'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc30@sha256:27323c9b90dccde55f235ce66fc99526a0e0c1646409dbe7d4888d3ab43cf568'
 FIXTURE=$(mktemp -d)
 cleanup() {
   docker run --rm -v "$FIXTURE:/fixture" \

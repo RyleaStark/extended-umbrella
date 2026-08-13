@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0.rc30-umbrel.1 — 2026-08-12
+
+- Reconcile Refresh status with provider-native zrok share inventory for the exact environment, public target, proxy mode, and expected endpoint.
+- Bind destructive disconnect commands and acknowledgements to the persisted reserved namespace and name.
+- Recover interrupted `starting` state and retain explicit cleanup authority when compensation cannot finish.
+- Scope share cleanup by zrok environment ID and endpoint so another deployment using the same account and internal target cannot be deleted.
+- Preserve tokenless active state and the isolated secretless public listener on port 21212.
+
 ## 0.4.0.rc29-umbrel.1 — 2026-08-12
 
 - Fix deterministic zrok Refresh status failures caused by deleting the current status snapshot before the sidecar consumed the command.
