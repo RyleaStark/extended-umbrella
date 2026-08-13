@@ -126,8 +126,8 @@ services:
         - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:22121/api/health', timeout=2).read()"
       interval: 10s
       timeout: 3s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 30s
 
   lnswitchboard-public:
     image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d
