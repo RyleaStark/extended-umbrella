@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc28-umbrel.1"
+version: "0.4.0.rc29-umbrel.1"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  Adds zrok as a third public-ingress provider with both managed zrok Cloud and self-hosted environment modes. zrok receives only the secretless public listener on port 21212, with dedicated enrollment and runtime state; the dashboard and administrative authority remain private on port 22121. Cloud setup uses a persistent reserved name and warns that account verification is required to remove zrok's browser interstitial for Lightning and NIP-05 machine clients. Includes the RC22 persistence, recovery, and listener-isolation hardening.
+  Hardens zrok status reconciliation so Refresh status no longer reports a false failure while the share is healthy. Refresh replies are correlated to the exact operation and reserved zrok identity, transient status-file races are tolerated without disconnecting a working share, and legacy subordinate share tokens are removed from persistent supervisor state. zrok remains restricted to the secretless public listener on port 21212.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

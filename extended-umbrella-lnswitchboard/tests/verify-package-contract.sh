@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc29@sha256:c9ffacd79b51f75f18dbf6eca238fad660f3fe264a1176ae5d3953f6d4758a24'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -15,10 +15,10 @@ manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
 assert len(test_scripts) == 32
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc28-umbrel.1'
+assert manifest['version'] == '0.4.0.rc29-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc29@sha256:c9ffacd79b51f75f18dbf6eca238fad660f3fe264a1176ae5d3953f6d4758a24'
 assert app['healthcheck']['start_period'] == '30s'
 assert app['healthcheck']['retries'] == 12
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
@@ -161,8 +161,8 @@ print('GREEN exact_rc23_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = '4c8642917605181e3abe6554bd7683a95339f30f' ]
-echo 'GREEN exact_rc26_source_revision_ok'
+[ "$app_revision" = 'bf5a078a525494b5be2be833a10df129f3df4b02' ]
+echo 'GREEN exact_rc29_source_revision_ok'
 
 docker run --rm -i \
   -e DEP_ENV=DOCKER \
