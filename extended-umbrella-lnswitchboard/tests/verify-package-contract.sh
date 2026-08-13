@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -15,10 +15,10 @@ manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
 assert len(test_scripts) == 32
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc26-umbrel.2'
+assert manifest['version'] == '0.4.0.rc28-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc26@sha256:f23473b8d89cb8b1eb521ba873ec2104a941788af74593f12e175693db78bf4d'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc28@sha256:01e9e4f873b4e1ac9c5710f44ee7801e63cc0caebfc695cded34215d557ecd0d'
 assert app['healthcheck']['start_period'] == '30s'
 assert app['healthcheck']['retries'] == 12
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
@@ -33,7 +33,7 @@ assert '${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}
 assert '${APP_LIGHTNING_NODE_DATA_DIR}/data/chain/bitcoin/${APP_BITCOIN_NETWORK}/readonly.macaroon:/lnd/readonly.macaroon:ro' in volumes
 assert '${BITCOIN_NETWORK}' not in (root / 'docker-compose.yml').read_text(encoding='utf-8')
 assert app['environment']['LND_HOST'] == '${APP_LIGHTNING_NODE_IP}'
-assert app['environment']['DEP_ENV'] == 'UMBREL'
+assert app['environment']['DEP_ENV'] == 'UMBREL_DEV'
 assert app['environment']['TRUSTED_HOSTS'] == '*'
 assert app['environment']['LISTENER_MODE'] == 'admin'
 assert app['read_only'] is True and app['mem_limit'] == '256m'
@@ -52,7 +52,7 @@ assert public['volumes'] == [
 assert public['ports'] == ['21212:21212']
 assert public['read_only'] is True and public['mem_limit'] == '128m'
 assert public['cap_drop'] == ['ALL']
-assert set(public['networks']) == {'cloudflare-egress', 'zrok-public'}
+assert set(public['networks']) == {'cloudflare-egress', 'zrok-public', 'tailscale-public'}
 assert 'lns.internal' in public['networks']['cloudflare-egress']['aliases']
 assert 'public' in public['networks']['zrok-public']['aliases']
 assert '/api/health' in public['healthcheck']['test'][-1]
@@ -76,7 +76,8 @@ assert ts['user'] == '1000:1000' and ts['read_only'] is True
 assert ts['cap_drop'] == ['ALL'] and 'cap_add' not in ts and 'devices' not in ts
 assert ts['environment']['TS_USERSPACE'] == 'true'
 assert ts['environment']['TS_NO_LOGS_NO_SUPPORT'] == 'true'
-assert ts['network_mode'] == 'service:lnswitchboard-public'
+assert ts['networks'] == ['tailscale-public']
+assert ts['environment']['DEP_ENV'] == 'UMBREL_DEV'
 assert '${APP_DATA_DIR}/data/secrets/tailscale:/run/lnswitchboard' in ts['volumes']
 migrate = compose['services']['state_migrate']
 assert migrate['network_mode'] == 'none'
@@ -160,7 +161,7 @@ print('GREEN exact_rc23_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = '2884bf5af0474ba15b2c8770a205abf2aeed0cec' ]
+[ "$app_revision" = '4c8642917605181e3abe6554bd7683a95339f30f' ]
 echo 'GREEN exact_rc26_source_revision_ok'
 
 docker run --rm -i \

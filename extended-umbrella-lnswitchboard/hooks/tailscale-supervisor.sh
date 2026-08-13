@@ -11,7 +11,14 @@ CONTROL_DIR="${TS_CONTROL_DIR:-/run/lnswitchboard/control}"
 STATUS_DIR="${TS_STATUS_DIR:-/run/lnswitchboard/status}"
 POLL_INTERVAL="${TS_POLL_INTERVAL:-2}"
 LOGIN_RETENTION_SECONDS="${TS_LOGIN_RETENTION_SECONDS:-300}"
-FUNNEL_TARGET="http://127.0.0.1:21212"
+DEP_ENV=$(printf '%s' "${DEP_ENV:-DOCKER}" | tr '[:lower:]' '[:upper:]')
+case "$DEP_ENV" in
+    DOCKER) PUBLIC_HOST=lnswitchboard-public ;;
+    UMBREL) PUBLIC_HOST=lnswitchboard_public ;;
+    UMBREL_DEV) PUBLIC_HOST=extended-umbrella-lnswitchboard_public ;;
+    *) printf '%s\n' "unsupported DEP_ENV" >&2; exit 1 ;;
+esac
+FUNNEL_TARGET="http://${PUBLIC_HOST}:21212"
 
 case "$LOGIN_RETENTION_SECONDS" in
     "" | *[!0-9]*)

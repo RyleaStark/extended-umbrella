@@ -17,7 +17,9 @@ assert '${APP_DATA_DIR}/data/secrets/zrok:/run/lnswitchboard' in z['volumes']
 for forbidden in ('/app/secrets/lnswitchboard.db','connection-secrets.key','/lnd/','cloudflare-mesh','tailscale'):
     assert forbidden not in str(z)
 script=(p/'hooks/zrok-supervisor.sh').read_text()
-assert 'TARGET=http://public:21212' in script
+assert 'DEP_ENV' in script
+assert 'UMBREL_DEV) PUBLIC_HOST=extended-umbrella-lnswitchboard_public' in script
+assert z['environment']['DEP_ENV'] == 'UMBREL_DEV'
 assert ':22121' not in script
 assert 'ZROK2_API_ENDPOINT="$endpoint"' in script
 assert '--open --subordinate --force-local' in script
