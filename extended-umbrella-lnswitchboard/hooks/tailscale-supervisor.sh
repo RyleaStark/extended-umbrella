@@ -17,6 +17,8 @@ ACK_DIR="$CONTROL_DIR/acks"
 RESULT_DIR="$STATUS_DIR/results"
 POLL_INTERVAL="${TS_POLL_INTERVAL:-2}"
 LOGIN_RETENTION_SECONDS="${TS_LOGIN_RETENTION_SECONDS:-300}"
+COMPLETED_RETENTION_SECONDS="${TS_COMPLETED_RETENTION_SECONDS:-2592000}"
+COMPLETED_MAX_RECORDS="${TS_COMPLETED_MAX_RECORDS:-4096}"
 DEP_ENV=$(printf '%s' "${DEP_ENV:-DOCKER}" | tr '[:lower:]' '[:upper:]')
 case "$DEP_ENV" in
     DOCKER) PUBLIC_HOST=lnswitchboard-public ;;
@@ -30,6 +32,12 @@ ACTIVE_STATE="$STATE_DIR/.lnswitchboard-active.json"
 case "$LOGIN_RETENTION_SECONDS" in
     "" | *[!0-9]*)
         printf '%s\n' "TS_LOGIN_RETENTION_SECONDS must be a non-negative integer" >&2
+        exit 1
+        ;;
+esac
+case "$COMPLETED_RETENTION_SECONDS:$COMPLETED_MAX_RECORDS" in
+    *[!0-9:]* | :* | *:)
+        printf '%s\n' "completed retention settings must be non-negative integers" >&2
         exit 1
         ;;
 esac
@@ -441,13 +449,28 @@ recover_operation_records() {
 }
 
 cleanup_completed_operations() {
+    now=$(date +%s)
     for completed in "$COMPLETED_DIR"/*.json; do
         [ -f "$completed" ] || continue
         operation_id=$(basename "$completed" .json)
         valid_operation_id "$operation_id" || continue
         [ -f "$ACK_DIR/$operation_id.ack" ] && continue
         durable_remove "$OPERATION_DIR/$operation_id.json"
+        modified=$(stat -c %Y "$completed" 2>/dev/null || printf '%s' "$now")
+        if [ $((now - modified)) -ge "$COMPLETED_RETENTION_SECONDS" ]; then
+            durable_remove "$completed"
+        fi
     done
+    count=$(find "$COMPLETED_DIR" -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')
+    if [ "$count" -gt "$COMPLETED_MAX_RECORDS" ]; then
+        remove_count=$((count - COMPLETED_MAX_RECORDS))
+        for completed in "$COMPLETED_DIR"/*.json; do
+            [ -f "$completed" ] || continue
+            printf '%s %s\n' "$(stat -c %Y "$completed")" "$completed"
+        done | sort -n | head -n "$remove_count" | while read -r _ path; do
+            durable_remove "$path"
+        done
+    fi
 }
 
 consume_results() {
