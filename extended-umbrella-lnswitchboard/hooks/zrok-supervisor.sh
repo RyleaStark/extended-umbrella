@@ -25,10 +25,10 @@ atomic_status() {
 }
 
 atomic_active() {
-  local phase=$1 namespace=$2 name=$3 share_token=${4:-} tmp="${ACTIVE}.tmp.${BASHPID}"
+  local phase=$1 namespace=$2 name=$3 endpoints=${4:-'[]'} tmp="${ACTIVE}.tmp.${BASHPID}"
   jq -cn --arg phase "$phase" --arg namespace "$namespace" --arg name "$name" \
-    --arg share_token "$share_token" --arg operation_id "$operation_id" \
-    '{phase:$phase,namespace:$namespace,name:$name,share_token:$share_token,operation_id:$operation_id}' >"$tmp"
+    --arg operation_id "$operation_id" --argjson frontend_endpoints "$endpoints" \
+    '{phase:$phase,namespace:$namespace,name:$name,operation_id:$operation_id,frontend_endpoints:$frontend_endpoints}' >"$tmp"
   chmod 600 "$tmp"
   mv -f "$tmp" "$ACTIVE"
 }
@@ -81,8 +81,8 @@ start_share() {
         ' <<<"$boot" >/dev/null; then
           share_token=$(jq -er '.token' <<<"$boot")
           endpoints=$(jq -c '{frontend_endpoints:[.frontend_endpoints[] | "https://" + ascii_downcase]}' <<<"$boot")
-          atomic_active active "$namespace" "$name" "$share_token"
-          atomic_status connected "$endpoints"
+          atomic_active active "$namespace" "$name" "$(jq -c '.frontend_endpoints' <<<"$endpoints")"
+          atomic_status connected "$(jq -c --arg namespace "$namespace" --arg name "$name" '. + {namespace:$namespace,name:$name}' <<<"$endpoints")"
         else
           atomic_status error
         fi
@@ -156,7 +156,7 @@ disconnect() {
   if [ ! -f "$ACTIVE" ] && ! enabled; then atomic_status disconnected; return 0; fi
   namespace=$(jq -er '.namespace' "$ACTIVE") || { atomic_status error; return 1; }
   name=$(jq -er '.name' "$ACTIVE") || { atomic_status error; return 1; }
-  atomic_active cleanup "$namespace" "$name" "$(jq -r '.share_token // ""' "$ACTIVE")"
+  atomic_active cleanup "$namespace" "$name" "$(jq -c '.frontend_endpoints // []' "$ACTIVE")"
   stop_share
   cleanup_fixed_shares || { atomic_status error; return 1; }
   if name_exists "$namespace" "$name"; then
@@ -168,10 +168,19 @@ disconnect() {
 }
 
 refresh() {
+  local endpoints
   operation_id=$(cat "$CONTROL/refresh")
   rm -f "$CONTROL/refresh"
-  if share_alive && [ -s "$STATUS/status.json" ]; then
-    atomic_status refresh_complete "$(jq -c 'del(.state,.operation_id)' "$STATUS/status.json")"
+  endpoints=$(jq -c '
+    select(
+      (.namespace | type == "string" and length >= 1 and length <= 128) and
+      (.name | type == "string" and length >= 1 and length <= 63) and
+      (.frontend_endpoints | type == "array" and length >= 1 and length <= 8)
+    ) |
+    {frontend_endpoints,namespace,name}
+  ' "$ACTIVE" 2>/dev/null || true)
+  if share_alive && [ -n "$endpoints" ]; then
+    atomic_status refresh_complete "$endpoints"
   else
     atomic_status error
   fi

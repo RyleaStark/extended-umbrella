@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0.rc29-umbrel.1 — 2026-08-12
+
+- Fix deterministic zrok Refresh status failures caused by deleting the current status snapshot before the sidecar consumed the command.
+- Correlate refresh acknowledgements to the exact operation and reserved zrok identity, while tolerating transient missing or malformed snapshots without disconnecting a healthy share.
+- Stop persisting subordinate zrok share tokens and migrate legacy active state to the non-secret endpoint-and-identity record during recovery.
+- Preserve zrok's isolated route to the secretless public listener on port 21212.
+
 ## 0.4.0.rc22-umbrel.3 — 2026-08-09
 
 - Retire validated App Proxy publication temporaries through a root-private crash-recovery directory while holding the opened inode across the atomic move.
