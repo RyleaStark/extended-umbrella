@@ -2,19 +2,19 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-ltcspace
 category: bitcoin
 name: "Litecoin Space"
-version: "3.3.1-umbrel.8"
+version: "3.3.1-umbrel.9"
 tagline: "Explore your own Litecoin node"
 description: >-
   Litecoin Space is a self-hosted Litecoin block explorer and mempool visualizer.
 
-  This Extended Umbrella package connects the Litecoin Foundation's Litecoin Space fork to your local Litecoin Core and Fulcrum LTC apps, keeping blockchain queries on your Umbrel.
+  This Extended Umbrella package connects the Litecoin Foundation's Litecoin Space fork to your local Litecoin Core and Fulcrum LTC apps. Transparent-chain queries stay on your Umbrel; the MWEB explorer currently uses Litecoin Space's public MWEB API because its dedicated indexer is not distributed with the fork.
 
   This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.
 releaseNotes: >-
-  Aligns the app and GHCR image namespaces with the maintained ltcspace repository:
-  extended-umbrella-litecoin-ltcspace, umbrel-litecoin-ltcspace-frontend, and
-  umbrel-litecoin-ltcspace-backend. This ID rename is a new Umbrel app identity; existing
-  installations must preserve and migrate their data before installing this package.
+  Restores the MWEB explorer dashboard, charts, supply, tip, mempool, and block views by
+  enabling the backend's MWEB proxy and adding a feature-specific runtime health check.
+  MWEB data is currently sourced from Litecoin Space's public MWEB API; local Litecoin Core,
+  Electrum-server, mempool, and transparent-chain explorer traffic remain local to your Umbrel.
 developer: "Litecoin Foundation and RyleaStark"
 website: https://litecoinspace.org
 dependencies:
