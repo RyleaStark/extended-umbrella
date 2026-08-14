@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0.rc32-umbrel.1 — 2026-08-13
+
+- Pin immutable multi-architecture lnSwitchboard RC32 image `sha256:20f268d81cac7006653af38c801502b5a5daafa2844593f8096a0803c700d8c6`.
+- Restore bottom padding beneath the compact iOS navigation controls.
+- Prevent horizontal page scrolling from the mobile content inset.
+
 ## 0.4.0.rc31-umbrel.1 — 2026-08-13
 
 - Pin immutable multi-architecture lnSwitchboard RC31 image `sha256:2269585f8b6f98ba0bef06ed57878fa3acf070ccc368ee9f990122a560659859`.
