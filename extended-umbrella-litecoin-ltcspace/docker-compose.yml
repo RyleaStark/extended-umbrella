@@ -6,7 +6,7 @@ services:
       PROXY_AUTH_ADD: "false"
 
   web:
-    image: ghcr.io/ryleastark/umbrel-litecoin-ltcspace-frontend:v3.3.1-umbrel.4@sha256:878533568302f861f2f6eb4fb3799d6c2f6079e4e473a2f5f66d299b7b150e63
+    image: ghcr.io/ryleastark/umbrel-litecoin-ltcspace-frontend:v3.3.1-umbrel.5@sha256:da9b0d68049f106383af0f638213cd6fc84b5dbc8f0bcb702a955498d859cb20
     user: "1000:1000"
     init: true
     restart: on-failure
@@ -29,7 +29,7 @@ services:
         ipv4_address: $APP_LITECOIN_LTCSPACE_IP
 
   api:
-    image: ghcr.io/ryleastark/umbrel-litecoin-ltcspace-backend:v3.3.1-umbrel.4@sha256:99e83c520a6a5b5d639bf0d2901b37f2dc839b4269925960272473e62173e205
+    image: ghcr.io/ryleastark/umbrel-litecoin-ltcspace-backend:v3.3.1-umbrel.5@sha256:02d923269eeed1316ef28320ac674c740b1a43a10f7afc1fd89810e0c2576519
     user: "1000:1000"
     init: true
     restart: on-failure
@@ -63,9 +63,16 @@ services:
       MEMPOOL_STDOUT_LOG_MIN_PRIORITY: "info"
       STATISTICS_ENABLED: "true"
       LIGHTNING_ENABLED: "false"
+      MWEB_ENABLED: "true"
+      MWEB_API_URL: "https://litecoinspace.org/api/v1/mweb"
+      MWEB_TIMEOUT_MS: "15000"
       NODE_OPTIONS: "--max-old-space-size=${APP_LITECOIN_LTCSPACE_NODE_MAX_OLD_SPACE_SIZE:-1024}"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8999/api/v1/backend-info | grep -q . || exit 1"]
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS http://localhost:8999/api/v1/backend-info | grep -q . &&
+          curl -fsS http://localhost:8999/api/v1/mweb/sync/status | grep -q '"indexed":true'
       interval: 30s
       timeout: 10s
       retries: 10
