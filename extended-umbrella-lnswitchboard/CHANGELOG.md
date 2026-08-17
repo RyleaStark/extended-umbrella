@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0.rc33-umbrel.1 — 2026-08-13
+
+- Pin immutable multi-architecture lnSwitchboard RC33 image `sha256:d9e8dfee8766439d2dadd96e0a0dad4b1aa93c70153e628e2f1ae690f1518147`.
+- Preserve an authenticated, registered Tailscale node when the short-lived browser flow expires.
+- Continue cancelling abandoned login flows that never authenticated.
+
 ## 0.4.0.rc32-umbrel.1 — 2026-08-13
 
 - Pin immutable multi-architecture lnSwitchboard RC32 image `sha256:20f268d81cac7006653af38c801502b5a5daafa2844593f8096a0803c700d8c6`.
