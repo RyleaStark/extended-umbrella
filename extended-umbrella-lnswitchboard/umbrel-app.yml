@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc34-umbrel.1"
+version: "0.4.0.rc35-umbrel.1"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  Makes Tailscale onboarding durable across device approval, Tailnet Lock signing, browser cancellation, cookie expiry, and app restart. Pending identities stay exact-node bound and continue automatically without allowing lnSwitchboard to approve or sign itself.
+  Fixes Tailscale Funnel and zrok finalization by routing them through the DNS-safe, Extended Umbrella-prefixed public-service alias. Extended Umbrella container naming remains isolated from official-store applications.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella

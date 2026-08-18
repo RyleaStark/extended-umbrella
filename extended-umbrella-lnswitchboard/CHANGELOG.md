@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0.rc35-umbrel.1 — 2026-08-18
+
+- Pin immutable multi-architecture lnSwitchboard RC35 image `sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab`.
+- Add the DNS-safe `extended-umbrella-lnswitchboard-public` alias on each private connector network.
+- Preserve all existing Extended Umbrella-prefixed container names and customer-facing proxy names.
+- Route Tailscale, zrok, and Cloudflare through the isolated prefixed alias without using underscore-bearing URL hostnames.
+
 ## 0.4.0.rc34-umbrel.1 — 2026-08-18
 
 - Pin immutable multi-architecture lnSwitchboard RC34 image `sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9`.

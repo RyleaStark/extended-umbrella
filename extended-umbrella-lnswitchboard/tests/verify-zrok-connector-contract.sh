@@ -18,7 +18,8 @@ for forbidden in ('/app/secrets/lnswitchboard.db','connection-secrets.key','/lnd
     assert forbidden not in str(z)
 script=(p/'hooks/zrok-supervisor.sh').read_text()
 assert 'DEP_ENV' in script
-assert 'UMBREL_DEV) PUBLIC_HOST=extended-umbrella-lnswitchboard_public' in script
+assert 'UMBREL_DEV) PUBLIC_HOST=extended-umbrella-lnswitchboard-public' in script
+assert 'extended-umbrella-lnswitchboard-public' in public['networks']['zrok-public']['aliases']
 assert z['environment']['DEP_ENV'] == 'UMBREL_DEV'
 assert ':22121' not in script
 assert 'ZROK2_API_ENDPOINT="$endpoint"' in script

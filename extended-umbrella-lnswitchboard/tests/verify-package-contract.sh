@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc34@sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -15,10 +15,10 @@ manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
 assert len(test_scripts) == 32
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc34-umbrel.1'
+assert manifest['version'] == '0.4.0.rc35-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc34@sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab'
 assert app['healthcheck']['start_period'] == '30s'
 assert app['healthcheck']['retries'] == 12
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
@@ -53,6 +53,11 @@ assert public['ports'] == ['21212:21212']
 assert public['read_only'] is True and public['mem_limit'] == '128m'
 assert public['cap_drop'] == ['ALL']
 assert set(public['networks']) == {'cloudflare-egress', 'zrok-public', 'tailscale-public'}
+prefixed_public_alias = 'extended-umbrella-lnswitchboard-public'
+assert prefixed_public_alias in public['networks']['cloudflare-egress']['aliases']
+assert prefixed_public_alias in public['networks']['zrok-public']['aliases']
+assert public['networks']['tailscale-public']['aliases'] == [prefixed_public_alias]
+assert app['environment']['CLOUDFLARED_ORIGIN_URL'] == f'http://{prefixed_public_alias}:21212'
 assert 'lns.internal' in public['networks']['cloudflare-egress']['aliases']
 assert 'public' in public['networks']['zrok-public']['aliases']
 assert '/api/health' in public['healthcheck']['test'][-1]
@@ -161,8 +166,8 @@ print('GREEN exact_rc23_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = '9ce661e1e04bb2c67a2bbbc8e15e43b798d5c267' ]
-echo 'GREEN exact_rc34_source_revision_ok'
+[ "$app_revision" = '42d7b145fdb85f5efc93e637d49117090a2e01e3' ]
+echo 'GREEN exact_rc35_source_revision_ok'
 
 docker run --rm -i \
   -e DEP_ENV=DOCKER \
