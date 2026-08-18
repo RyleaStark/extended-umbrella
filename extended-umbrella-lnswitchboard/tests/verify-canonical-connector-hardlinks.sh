@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc37@sha256:2d41f01132933bfa02a2859f27f9d7128b268e765699b2779720f151a338ef03'
 docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
   --security-opt no-new-privileges:true --tmpfs /fixture:size=16m,mode=0700 \
   -v "$PACKAGE_DIR/hooks/state-migrate.py:/opt/state-migrate.py:ro" \
@@ -34,3 +34,27 @@ else:
  raise AssertionError('hard-linked application-owned canonical state was accepted')
 print('GREEN connector protocol hardlinks isolated from migration state validation')
 PY
+
+FIXTURE=$(mktemp -d)
+trap 'rm -rf "$FIXTURE"' EXIT
+mkdir -p "$FIXTURE/secrets/tailscale/control/operations" \
+  "$FIXTURE/secrets/tailscale/control/queue" "$FIXTURE/secrets/tailscale/status" \
+  "$FIXTURE/tailscale-state" "$FIXTURE/secrets/zrok" "$FIXTURE/zrok-state" \
+  "$FIXTURE/public-socket" "$FIXTURE/secrets/cloudflare-mesh"
+operation="$FIXTURE/secrets/tailscale/control/operations/$(printf 'b%.0s' {1..32}).json"
+printf '%s\n' '{"command":"enable"}' > "$operation"
+chmod 600 "$operation"
+ln "$operation" "$FIXTURE/secrets/tailscale/control/queue/$(basename "$operation")"
+docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
+  --cap-add CHOWN --cap-add DAC_OVERRIDE --cap-add FOWNER \
+  --security-opt no-new-privileges:true \
+  -v "$FIXTURE/secrets:/app-secrets" \
+  -v "$FIXTURE/secrets/tailscale:/tailscale-control" \
+  -v "$FIXTURE/tailscale-state:/tailscale-state" \
+  -v "$FIXTURE/secrets/zrok:/zrok-control" \
+  -v "$FIXTURE/zrok-state:/zrok-state" \
+  -v "$FIXTURE/public-socket:/public-socket" \
+  --entrypoint /usr/local/bin/lnswitchboard-prepare-state "$APP_IMAGE"
+[ "$(stat -c %h "$operation")" = 2 ]
+[ "$(stat -c %a "$operation")" = 600 ]
+printf 'GREEN exact_rc37_initializer_preserves_connector_protocol_hardlinks\n'
