@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc34@sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -24,7 +24,7 @@ services:
     restart: "no"
 
   permissions-init:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc34@sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab
     container_name: ${APP_ID}_permissions-init
     depends_on:
       state_migrate:
@@ -69,7 +69,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc34@sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
@@ -101,7 +101,7 @@ services:
       CLOUDFLARED_CONNECTOR_ENABLED: "true"
       CLOUDFLARED_TOKEN_PATH: "/app/secrets/cloudflare-mesh/node.env"
       CLOUDFLARED_TOKEN_GID: "1000"
-      CLOUDFLARED_ORIGIN_URL: "http://lnswitchboard-public:21212"
+      CLOUDFLARED_ORIGIN_URL: "http://extended-umbrella-lnswitchboard-public:21212"
       CLOUDFLARE_OAUTH_CLIENT_ID: "${CLOUDFLARE_OAUTH_CLIENT_ID:-}"
       CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK: "${CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK:-http://127.0.0.1:22121/api/cloudflare/oauth/callback}"
       CLOUDFLARE_OAUTH_REDIRECT_PAGE: "${CLOUDFLARE_OAUTH_REDIRECT_PAGE:-https://placeholder.invalid/oauth/callback}"
@@ -132,7 +132,7 @@ services:
       start_period: 30s
 
   lnswitchboard-public:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc34@sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab
     container_name: ${APP_ID}_public
     user: "1000:1000"
     restart: on-failure
@@ -160,12 +160,16 @@ services:
     networks:
       cloudflare-egress:
         aliases:
+          - extended-umbrella-lnswitchboard-public
           - lnswitchboard-public
           - lns.internal
       zrok-public:
         aliases:
+          - extended-umbrella-lnswitchboard-public
           - public
-      tailscale-public: {}
+      tailscale-public:
+        aliases:
+          - extended-umbrella-lnswitchboard-public
     healthcheck:
       test:
         - CMD
