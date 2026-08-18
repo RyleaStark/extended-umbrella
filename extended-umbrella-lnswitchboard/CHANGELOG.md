@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0.rc37-umbrel.1 — 2026-08-18
+
+- Pin immutable multi-architecture lnSwitchboard RC37 image `sha256:2d41f01132933bfa02a2859f27f9d7128b268e765699b2779720f151a338ef03`.
+- Isolate Tailscale and zrok protocol contents through both broad `/app-secrets` and direct control mounts in the image-owned initializer.
+- Keep each connector root no-follow and process it independently through its direct mount.
+- Preserve strict hard-link rejection for application databases, keys, and all non-connector state.
+
 ## 0.4.0.rc35-umbrel.2 — 2026-08-18
 
 - Allow canonical migration validation to skip traversal of the dedicated Tailscale, zrok, and Cloudflare runtime protocol directories.
