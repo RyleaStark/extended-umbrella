@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0.rc35-umbrel.2 — 2026-08-18
+
+- Allow canonical migration validation to skip traversal of the dedicated Tailscale, zrok, and Cloudflare runtime protocol directories.
+- Continue validating each reserved connector path as a real trusted directory before skipping its live contents.
+- Preserve strict hard-link rejection for application-owned databases, keys, state, migration staging, and archives.
+- Add an executable regression with an actual operation-to-queue hard link and a negative application-state hard link.
+
 ## 0.4.0.rc35-umbrel.1 — 2026-08-18
 
 - Pin immutable multi-architecture lnSwitchboard RC35 image `sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab`.

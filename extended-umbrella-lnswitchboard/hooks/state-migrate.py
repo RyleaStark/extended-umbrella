@@ -68,6 +68,7 @@ TRANSIENT_SQLITE_COMPATIBILITY_NAMES = {
     "lnswitchboard.db-wal",
     "lnswitchboard.db-shm",
 }
+CANONICAL_RUNTIME_DIRECTORIES = {"tailscale", "zrok", "cloudflare-mesh"}
 APP_PROXY_ENV = b"LOG_LEVEL=silent\nPROXY_AUTH_WHITELIST=\n"
 APP_PROXY_TEMP_PREFIX = ".app-proxy.env.tmp."
 APP_PROXY_LEGACY_TEMP_NAME = "app-proxy.env.tmp"
@@ -265,6 +266,20 @@ def validate_tree(path: Path) -> None:
                 fail(f"hard-linked state entry is not safe to migrate: {current.name}")
         else:
             fail(f"special files are not allowed in state ({current.name})")
+
+
+def validate_canonical_tree() -> None:
+    """Validate application state without traversing live connector protocols."""
+    canonical_stat = CANONICAL.lstat()
+    if CANONICAL.is_symlink() or not stat.S_ISDIR(canonical_stat.st_mode):
+        fail("the canonical secrets path has an unexpected type")
+    for child in CANONICAL.iterdir():
+        if child.name in CANONICAL_RUNTIME_DIRECTORIES:
+            child_stat = child.lstat()
+            if child.is_symlink() or not stat.S_ISDIR(child_stat.st_mode):
+                fail(f"the reserved connector path {child.name} has an unexpected type")
+            continue
+        validate_tree(child)
 
 
 def files_equal(left: Path, right: Path) -> bool:
@@ -1480,7 +1495,7 @@ def recover_legacy_archived_transaction(marker_names: list[str]) -> bool:
     if CANONICAL.exists():
         if CANONICAL.is_symlink() or not CANONICAL.is_dir():
             fail("the canonical secrets path has an unexpected type")
-        validate_tree(CANONICAL)
+        validate_canonical_tree()
         canonical_entries = {entry.name: entry for entry in CANONICAL.iterdir()}
     if set(marker_names).issubset(canonical_entries) and (
         not STAGE.exists() or not any(STAGE.iterdir())
@@ -1575,7 +1590,7 @@ def _main_locked() -> None:
         if CANONICAL.exists():
             if CANONICAL.is_symlink() or not CANONICAL.is_dir():
                 fail("the canonical secrets path has an unexpected type")
-            validate_tree(CANONICAL)
+            validate_canonical_tree()
             verify_database(CANONICAL / "lnswitchboard.db")
             verify_credential_bundle(CANONICAL)
             if (
@@ -1607,7 +1622,7 @@ def _main_locked() -> None:
     if CANONICAL.exists() and (CANONICAL.is_symlink() or not CANONICAL.is_dir()):
         fail("the canonical secrets path has an unexpected type")
     CANONICAL.mkdir(mode=0o750, exist_ok=True)
-    validate_tree(CANONICAL)
+    validate_canonical_tree()
 
     canonical_entries_before = {
         entry.name: entry for entry in CANONICAL.iterdir()

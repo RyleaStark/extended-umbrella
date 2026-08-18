@@ -13,9 +13,9 @@ root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
-assert len(test_scripts) == 32
+assert len(test_scripts) == 33
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc35-umbrel.1'
+assert manifest['version'] == '0.4.0.rc35-umbrel.2'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
 assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc35@sha256:7d0faaff3c270e2cc6ffe0a91b0da852e5c04d36537e2dc62be20350d5a50fab'
