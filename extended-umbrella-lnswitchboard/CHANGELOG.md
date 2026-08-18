@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0.rc38-umbrel.1 — 2026-08-18
+
+- Pin immutable multi-architecture lnSwitchboard RC38 image `sha256:275d5fb40e003890654922f48feab1b6b0f35d268fa1bf19f49e82701947c293`.
+- Detect an already-active exact Tailscale Funnel route before issuing another enable command.
+- Converge durable approval/provisioning rows to connected without replaying provider side effects.
+
 ## 0.4.0.rc37-umbrel.1 — 2026-08-18
 
 - Pin immutable multi-architecture lnSwitchboard RC37 image `sha256:2d41f01132933bfa02a2859f27f9d7128b268e765699b2779720f151a338ef03`.
