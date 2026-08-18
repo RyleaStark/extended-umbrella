@@ -243,6 +243,35 @@ publish_command() {
     fi
 }
 
+publish_lock_status() {
+    destination="$STATUS_DIR/lock.json"
+    raw="$STATUS_DIR/.lock-status.raw.$$"
+    if run_tailscale --socket="$SOCKET" lock status --json >"$raw" 2>/dev/null; then
+        schema=$(sed -n 's/.*"SchemaVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$raw" | head -n 1)
+        enabled=$(sed -n 's/.*"Enabled"[[:space:]]*:[[:space:]]*\(true\|false\).*/\1/p' "$raw" | head -n 1)
+        signed=$(sed -n 's/.*"NodeKeySigned"[[:space:]]*:[[:space:]]*\(true\|false\).*/\1/p' "$raw" | head -n 1)
+        node_key=$(sed -n 's/.*"NodeKey"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$raw" | head -n 1)
+        public_key=$(sed -n 's/.*"PublicKey"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$raw" | head -n 1)
+        rm -f "$raw"
+        if [ "$schema" = 1 ] && [ "$enabled" = false ]; then
+            atomic_text "$destination" '{"SchemaVersion":"1","Enabled":false}'
+            return
+        fi
+        if [ "$schema" = 1 ] && [ "$enabled" = true ]; then
+            case "$signed" in true | false) ;; *) signed=false ;; esac
+            node_key_present=false
+            public_key_present=false
+            [ -n "$node_key" ] && node_key_present=true
+            [ -n "$public_key" ] && public_key_present=true
+            atomic_text "$destination" \
+                "{\"SchemaVersion\":\"1\",\"Enabled\":true,\"NodeKeySigned\":$signed,\"NodeKeyPresent\":$node_key_present,\"PublicKeyPresent\":$public_key_present}"
+            return
+        fi
+    fi
+    rm -f "$raw" "$destination"
+    sync_path "$STATUS_DIR"
+}
+
 publish_node_status() {
     destination="$STATUS_DIR/node.json"
     temporary="$destination.tmp.$$"
@@ -677,6 +706,7 @@ while :; do
     publish_node_status
     publish_command "$STATUS_DIR/funnel.json" \
         run_tailscale --socket="$SOCKET" funnel status --json
+    publish_lock_status
     sleep "$POLL_INTERVAL" &
     wait $! 2>/dev/null || true
 done

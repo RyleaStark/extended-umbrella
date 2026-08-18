@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0.rc34-umbrel.1 — 2026-08-18
+
+- Pin immutable multi-architecture lnSwitchboard RC34 image `sha256:a7a5f2207dcb40cbd8ddfc864d399261ffe19e5fbf3e13eae06bcdc2bd4f9ac9`.
+- Persist Tailscale device approval, Tailnet Lock signing, and Funnel prerequisites as durable pending states.
+- Preserve exact node ID and normalized hostname binding across cancellation, cookie expiry, runtime replacement, and backend restart.
+- Continue pending onboarding automatically without granting lnSwitchboard approval or signing authority.
+
 ## 0.4.0.rc33-umbrel.1 — 2026-08-17
 
 - Pin immutable multi-architecture lnSwitchboard RC33 image `sha256:d9e8dfee8766439d2dadd96e0a0dad4b1aa93c70153e628e2f1ae690f1518147`.
