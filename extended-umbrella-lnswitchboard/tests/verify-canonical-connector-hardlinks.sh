@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc38@sha256:275d5fb40e003890654922f48feab1b6b0f35d268fa1bf19f49e82701947c293'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc39@sha256:5cb80b766a02604ac5f190b35515a58d88a082e356676fa6e226b2e379bcf237'
 docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
   --security-opt no-new-privileges:true --tmpfs /fixture:size=16m,mode=0700 \
   -v "$PACKAGE_DIR/hooks/state-migrate.py:/opt/state-migrate.py:ro" \
@@ -57,4 +57,4 @@ docker run --rm --user 0:0 --network none --read-only --cap-drop ALL \
   --entrypoint /usr/local/bin/lnswitchboard-prepare-state "$APP_IMAGE"
 [ "$(stat -c %h "$operation")" = 2 ]
 [ "$(stat -c %a "$operation")" = 600 ]
-printf 'GREEN exact_rc38_initializer_preserves_connector_protocol_hardlinks\n'
+printf 'GREEN exact_rc39_initializer_preserves_connector_protocol_hardlinks\n'

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc38@sha256:275d5fb40e003890654922f48feab1b6b0f35d268fa1bf19f49e82701947c293'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc39@sha256:5cb80b766a02604ac5f190b35515a58d88a082e356676fa6e226b2e379bcf237'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -13,12 +13,13 @@ root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
-assert len(test_scripts) == 33
+assert len(test_scripts) == 34
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc38-umbrel.1'
+assert manifest['version'] == '0.4.0.rc39-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc38@sha256:275d5fb40e003890654922f48feab1b6b0f35d268fa1bf19f49e82701947c293'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc39@sha256:5cb80b766a02604ac5f190b35515a58d88a082e356676fa6e226b2e379bcf237'
+assert app['environment']['LNSWITCHBOARD_ENV_FILE'] == '/app/secrets/.env'
 assert app['healthcheck']['start_period'] == '30s'
 assert app['healthcheck']['retries'] == 12
 assert compose['services']['tailscale']['image'] == 'tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
@@ -119,7 +120,7 @@ for pattern in (r'(?i)password\s*[:=]\s*["\']?[^$\s{]', r'(?i)(access|refresh|me
 print('GREEN static_package_security_and_persistence_contract_ok')
 PY
 
-# Validate every application environment key against the exact RC22 Settings model.
+# Validate every application environment key against the exact RC39 runtime contract.
 docker run --rm -i --platform linux/arm64 \
   -v "$PACKAGE_DIR/docker-compose.yml:/package/docker-compose.yml:ro" \
   --entrypoint python "$APP_IMAGE" - <<'PY'
@@ -130,7 +131,7 @@ from pydantic import ValidationError
 from pydantic.aliases import AliasChoices
 from backend.app.config import Settings
 
-allowed = set()
+allowed = {"LNSWITCHBOARD_ENV_FILE"}
 for name, field in Settings.model_fields.items():
     allowed.add(name.upper())
     alias = field.validation_alias
@@ -141,7 +142,7 @@ for name, field in Settings.model_fields.items():
 compose = yaml.safe_load(Path('/package/docker-compose.yml').read_text(encoding='utf-8'))
 keys = set(compose['services']['lnswitchboard']['environment'])
 unknown = sorted(keys - allowed)
-assert not unknown, f'RC22 ignores package environment keys: {unknown}'
+assert not unknown, f'RC39 ignores package environment keys: {unknown}'
 invalid_redirects = {
     'CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK': [
         'https://admin.example/api/cloudflare/oauth/callback',
@@ -166,8 +167,8 @@ print('GREEN exact_rc23_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = '648ed30d7cd755d2084c85f5298d58c8dfd72769' ]
-echo 'GREEN exact_rc38_source_revision_ok'
+[ "$app_revision" = 'af679a391da2963b4c9563b1fad1866f89e6c652' ]
+echo 'GREEN exact_rc39_source_revision_ok'
 
 docker run --rm -i \
   -e DEP_ENV=DOCKER \
