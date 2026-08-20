@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0.rc39-umbrel.1 — 2026-08-20
+
+- Pin immutable multi-architecture lnSwitchboard RC39 image `sha256:5cb80b766a02604ac5f190b35515a58d88a082e356676fa6e226b2e379bcf237`.
+- Keep registered well-known and explicit callback routes on the isolated public listener while applying a configurable reject or fixed redirect policy to other paths.
+- Persist dashboard-managed runtime settings in the canonical writable secrets volume across app restarts.
+
 ## 0.4.0.rc38-umbrel.1 — 2026-08-18
 
 - Pin immutable multi-architecture lnSwitchboard RC38 image `sha256:275d5fb40e003890654922f48feab1b6b0f35d268fa1bf19f49e82701947c293`.
