@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Core are documented here.
 
+## 0.21.5.6-umbrel.2 — 2026-08-21
+
+### Changed
+
+- Updates the Litecoin dashboard to immutable GUI image v0.3.2 with the approved Node 24 dependency alignment.
+- Adds verified OCI source, revision, and version provenance while preserving the existing Litecoin Core version, runtime user, ports, and persistent data paths.
+
 ## 0.21.5.6-umbrel.1 — 2026-08-10
 
 ### Security
