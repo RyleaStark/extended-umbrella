@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.12 — 2026-08-21
+
+- Updates the dashboard runtime to Fastify `5.12.1`, resolving CVE-2026-18504 and CVE-2026-16732.
+- Keeps the decorative Connect-dialog border fixed at the outer modal edge while mobile content scrolls.
+- Pins the immutable multi-architecture GUI release `v1.0.10`.
+
 ## 2.0.0-umbrel.11 — 2026-08-10
 
 - Uses private ElectrumX admin database and daemon heights for provider-owned indexing progress.

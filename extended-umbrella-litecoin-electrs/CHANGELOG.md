@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Electrs are documented here.
 
+## 3.4.0-dev.3752866-umbrel.13 — 2026-08-21
+
+- Updates the dashboard runtime to Fastify `5.12.1`, resolving CVE-2026-18504 and CVE-2026-16732.
+- Keeps the decorative Connect-dialog border fixed at the outer modal edge while mobile content scrolls.
+- Pins the immutable multi-architecture GUI release `v1.0.14`.
+
 ## 3.4.0-dev.3752866-umbrel.12 — 2026-08-10
 
 - Exposes Electrs' private monitoring listener only on the app network so the GUI can distinguish active transaction-index and history-index phases while the public Electrum listener remains closed.

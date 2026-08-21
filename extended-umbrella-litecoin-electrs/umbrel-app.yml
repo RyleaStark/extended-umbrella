@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Electrs (LTC)"
-version: "3.4.0-dev.3752866-umbrel.12"
+version: "3.4.0-dev.3752866-umbrel.13"
 tagline: "A private Litecoin Electrum server powered by Electrs"
 description: >-
   Run a personal Electrum server for Litecoin using the maintained rust-litecoin fork of
@@ -23,8 +23,8 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Reports Electrs-owned transaction and history indexing phases without treating Litecoin Core txindex as provider
-  progress, while keeping the public Electrum listener authoritative for readiness.
+  Updates the GUI to Fastify 5.12.1 to resolve CVE-2026-18504 and CVE-2026-16732,
+  and keeps the Connect dialog's decorative border fixed while its mobile content scrolls.
 backupIgnore:
   - data/electrs
   - data/electrs-v3
