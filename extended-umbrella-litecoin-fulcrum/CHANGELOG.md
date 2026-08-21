@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.2-umbrel.1 — 2026-08-21
+
+- Updates the Fulcrum daemon from `2.1.1` to the immutable multi-architecture `2.1.2` release.
+- Includes upstream internal correctness fixes, refactoring, and dependency refreshes.
+- Retains GUI `v1.0.12`, existing ports, provider aliases, persistent data, and configuration; no migration is required.
+
 ## 2.1.1-umbrel.16 — 2026-08-21
 
 - Updates the dashboard runtime to Fastify `5.12.1`, resolving CVE-2026-18504 and CVE-2026-16732.
