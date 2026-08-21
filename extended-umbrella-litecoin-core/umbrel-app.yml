@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-litecoin-core
 category: bitcoin
 name: "Litecoin Node"
-version: "0.21.5.6-umbrel.1"
+version: "0.21.5.6-umbrel.2"
 tagline: "Run your personal Litecoin node"
 
 description: >-
@@ -11,8 +11,9 @@ description: >-
 
   The node uses the official Litecoin Core v0.21.5.6 image, pinned by immutable digest. Its Umbrel UI is a Litecoin-specific adaptation of Umbrel's Bitcoin Node interface with silver Litecoin branding.
 releaseNotes: >-
-  Adds native umbrelOS desktop widgets for live Litecoin node statistics and blockchain
-  Upgrades the runtime to Litecoin Core v0.21.5.6, including its MWEB/P2P validation and consensus-security update.
+  Updates the Litecoin dashboard's Node 24 web stack and release provenance. The
+  Litecoin Core version, ports, data paths, and configuration remain unchanged;
+  no migration is required.
 
 developer: Litecoin Project and RyleaStark
 website: https://litecoin.org
