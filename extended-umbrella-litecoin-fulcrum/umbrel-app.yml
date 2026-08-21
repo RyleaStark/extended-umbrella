@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.1-umbrel.16"
+version: "2.1.2-umbrel.1"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -23,8 +23,9 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Updates the GUI to Fastify 5.12.1 to resolve CVE-2026-18504 and CVE-2026-16732,
-  and keeps the Connect dialog's decorative border fixed while its mobile content scrolls.
+  Updates Fulcrum to 2.1.2, a maintenance release with internal correctness fixes and
+  dependency refreshes. The hardened Fastify 5.12.1 GUI and mobile Connect-dialog fix
+  are retained. No migration or configuration change is required.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"
