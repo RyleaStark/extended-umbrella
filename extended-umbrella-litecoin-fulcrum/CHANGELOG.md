@@ -2,6 +2,12 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.1-umbrel.16 — 2026-08-21
+
+- Updates the dashboard runtime to Fastify `5.12.1`, resolving CVE-2026-18504 and CVE-2026-16732.
+- Keeps the decorative Connect-dialog border fixed at the outer modal edge while mobile content scrolls.
+- Pins the immutable multi-architecture GUI release `v1.0.12`.
+
 ## 2.1.1-umbrel.15 — 2026-08-10
 
 - Validates Litecoin Core txindex as a separate prerequisite instead of presenting it as Fulcrum indexing progress.
