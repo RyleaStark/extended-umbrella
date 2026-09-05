@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Space are documented here.
 
+## 3.3.1-umbrel.10 — 2026-09-04
+
+### Changed
+
+- Excludes the rebuildable explorer cache and chain-derived MariaDB index from umbrelOS backups.
+- Keeps package configuration and generated app credentials eligible for backup; locally accumulated explorer statistics may take time to repopulate after a restore.
+
 ## 3.3.1-umbrel.8 — 2026-08-10
 
 ### Changed

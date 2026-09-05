@@ -2,6 +2,13 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Core are documented here.
 
+## 0.21.5.6-umbrel.3 — 2026-09-04
+
+### Changed
+
+- Excludes rebuildable Litecoin block, chainstate, and index directories for mainnet, testnet, signet, and regtest from umbrelOS backups.
+- Keeps wallet and application state eligible for backup.
+
 ## 0.21.5.6-umbrel.2 — 2026-08-21
 
 ### Changed
