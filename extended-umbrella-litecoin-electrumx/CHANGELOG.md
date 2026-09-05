@@ -2,6 +2,11 @@
 
 All notable changes to the Extended Umbrella package for Litecoin ElectrumX are documented here.
 
+## 2.0.0-umbrel.13 — 2026-09-04
+
+- Excludes the rebuildable ElectrumX UTXO database from umbrelOS backups.
+- Retains application state that is not part of the chain index.
+
 ## 2.0.0-umbrel.12 — 2026-08-21
 
 - Updates the dashboard runtime to Fastify `5.12.1`, resolving CVE-2026-18504 and CVE-2026-16732.

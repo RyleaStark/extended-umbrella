@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "ElectrumX (LTC)"
-version: "2.0.0-umbrel.12"
+version: "2.0.0-umbrel.13"
 tagline: "A lightweight Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by ElectrumX 2.0 and Litecoin Core.
@@ -12,8 +12,8 @@ description: >-
   your local network or Tor. ElectrumX (LTC) is an independent indexer and can satisfy
   the same Electrs (LTC) capability used by compatible applications such as Litecoin Space.
 releaseNotes: >-
-  Updates the GUI to Fastify 5.12.1 to resolve CVE-2026-18504 and CVE-2026-16732,
-  and keeps the Connect dialog's decorative border fixed while its mobile content scrolls.
+  Excludes ElectrumX's rebuildable UTXO database from umbrelOS backups, preventing
+  rapid backup growth while retaining non-index application state.
 developer: "Electrum developers and RyleaStark"
 website: https://electrumx-spesmilo.readthedocs.io/
 dependencies:
@@ -32,5 +32,6 @@ defaultPassword: ""
 backupIgnore:
   - data/electrumx/meta
   - data/electrumx/hist
+  - data/electrumx/utxo
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella/pull/28
