@@ -4,7 +4,7 @@ implements:
   - extended-umbrella-litecoin-electrs
 category: bitcoin
 name: "Fulcrum (LTC)"
-version: "2.1.2-umbrel.1"
+version: "2.1.2-umbrel.2"
 tagline: "A fast Litecoin Electrum server"
 description: >-
   Run a personal Litecoin Electrum server powered by Fulcrum and Litecoin Core.
@@ -23,9 +23,9 @@ gallery:
 path: ""
 defaultPassword: ""
 releaseNotes: >-
-  Updates Fulcrum to 2.1.2, a maintenance release with internal correctness fixes and
-  dependency refreshes. The hardened Fastify 5.12.1 GUI and mobile Connect-dialog fix
-  are retained. No migration or configuration change is required.
+  Reports Fulcrum's real indexing progress when Litecoin Core's required transaction
+  index is ready, even if Core still reports initial block download while optional
+  indexes catch up. No migration or configuration change is required.
 backupIgnore:
   - data/fulcrum/fulc2_db
 submitter: "Rylea Stark"
