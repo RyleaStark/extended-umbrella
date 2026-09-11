@@ -4,13 +4,14 @@
 # The cloudflare/mesh image reads MESH_NODE_TOKEN from the environment only,
 # but lnSwitchboard provisions the node token AFTER the stack starts (there is
 # no Docker socket access by design). Mirror the cloudflared --token-file
-# pattern: exit until the app writes the token file, letting the compose
-# restart policy re-enter until provisioning completes. Once started, supervise
+# pattern: wait in place until the app writes the token file so an unconfigured
+# connector does not create a Docker restart storm. Once started, supervise
 # the real entrypoint so deleting or replacing the token file revokes the local
 # connector even when only the lnSwitchboard application process restarts.
 set -eu
 
 TOKEN_FILE="${MESH_NODE_TOKEN_FILE:-/run/lnswitchboard/node.env}"
+TOKEN_POLL_INTERVAL="${MESH_TOKEN_POLL_INTERVAL:-10}"
 STATE_DIR="/var/lib/cloudflare-warp"
 IDENTITY_FILE="$STATE_DIR/.lnswitchboard-node-id"
 
@@ -38,17 +39,26 @@ record_mesh_identity() {
     mv -f "$temporary" "$IDENTITY_FILE"
 }
 
-if [ ! -s "$TOKEN_FILE" ]; then
-    echo "mesh node token not provisioned yet; waiting for lnSwitchboard" >&2
-    exit 1
-fi
-
-NODE_ID="$(read_token_field MESH_NODE_ID)"
-TOKEN="$(read_token_field MESH_NODE_TOKEN)"
-if [ -z "$NODE_ID" ] || [ -z "$TOKEN" ]; then
-    echo "mesh node token file is incomplete; waiting for lnSwitchboard" >&2
-    exit 1
-fi
+trap 'exit 143' HUP INT TERM
+WAIT_REASON=""
+while :; do
+    NODE_ID="$(read_token_field MESH_NODE_ID)"
+    TOKEN="$(read_token_field MESH_NODE_TOKEN)"
+    if [ -n "$NODE_ID" ] && [ -n "$TOKEN" ]; then
+        break
+    fi
+    if [ -s "$TOKEN_FILE" ]; then
+        REASON="mesh node token file is incomplete; waiting for lnSwitchboard"
+    else
+        REASON="mesh node token not provisioned yet; waiting for lnSwitchboard"
+    fi
+    if [ "$WAIT_REASON" != "$REASON" ]; then
+        echo "$REASON" >&2
+        WAIT_REASON="$REASON"
+    fi
+    sleep "$TOKEN_POLL_INTERVAL" &
+    wait $! 2>/dev/null || exit 143
+done
 
 mkdir -p "$STATE_DIR"
 PREVIOUS_NODE_ID="$(
