@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0.rc41-umbrel.1 — 2026-09-19
+
+- Pin immutable multi-architecture lnSwitchboard RC41 image `sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c` from merged source `0f8930c44961a077f8c626b06a6bed4211248ca1`.
+- Add an operator-controlled explicit-address-only mode so unknown local parts cannot generate Lightning invoices.
+- Enforce positive global receive limits and intersect global, per-address, remote-forwarding, and live-liquidity bounds.
+- Redact rate-limit IP addresses and nonessential payer-supplied content from retained operational history.
+
+## 0.4.0.rc40-umbrel.1 — 2026-09-11
+
+- Pin immutable multi-architecture lnSwitchboard RC40 image `sha256:22a2eae363125fc54b4cbebaf3570c89444fb36df86b701273d63dfc436d55a9` from merged source `4463fb961d054724feeacad999c23ebb717fb038`.
+- Keep an unconfigured Cloudflare Mesh connector idle instead of repeatedly restarting; Tailscale and zrok behavior is unchanged.
+
 ## 0.4.0.rc39-umbrel.1 — 2026-08-20
 
 - Pin immutable multi-architecture lnSwitchboard RC39 image `sha256:5cb80b766a02604ac5f190b35515a58d88a082e356676fa6e226b2e379bcf237`.
