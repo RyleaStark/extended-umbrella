@@ -2,6 +2,11 @@
 
 All notable changes to the Extended Umbrella package for Litecoin Fulcrum are documented here.
 
+## 2.1.3-umbrel.1 — 2026-10-05
+
+- Updates Fulcrum to 2.1.3, fixing an off-by-one error in its internal Merkle cache.
+- Retains the GUI, ports, dependency contract, persistent paths, and configuration. No migration is required.
+
 ## 2.1.2-umbrel.2 — 2026-09-07
 
 - Reports genuine Fulcrum indexing progress when Litecoin Core's required `txindex` is synchronized, even while Core still reports initial block download as optional indexes catch up.
