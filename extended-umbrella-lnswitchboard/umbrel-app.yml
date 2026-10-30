@@ -2,7 +2,7 @@ manifestVersion: 1
 id: extended-umbrella-lnswitchboard
 category: bitcoin
 name: "lnSwitchboard"
-version: "0.4.0.rc42-umbrel.1"
+version: "0.4.0.rc43-umbrel.1"
 tagline: "Self-Hosted Lightning Addresses for Your Domain"
 icon: https://raw.githubusercontent.com/RyleaStark/extended-umbrella/refs/heads/master/extended-umbrella-lnswitchboard/gallery/icon.svg
 gallery:
@@ -26,6 +26,6 @@ repo: https://github.com/RyleaStark/lnSwitchboard
 support: https://github.com/RyleaStark/lnSwitchboard/issues
 port: 22121
 releaseNotes: >-
-  Adds signed authoritative LND settlement evidence and operator-provisioned scoped client credentials, owned Lightning Addresses, and recoverable 14- or 30-day invoices. Machine integrations use bearer authentication on private-LAN port 22122; dashboard and credential provisioning stay behind their existing login boundary. Improves offline payment recovery, webhook replay retention, and preimage privacy. Existing data and ordinary LNURL behavior are preserved; do not forward port 22122 to the Internet.
+  Adds native Settings → Machine clients to provision, list and revoke scoped billing-service access. Configure the fixed domain, webhook receiver and signing secret, choose scopes, then copy the one-time client token into your service’s secret manager. Shows actual private client listener state and setup instructions. The optional private-webhook opt-in is now available in Environment → Security; enable only for trusted HTTP/private receivers and restart to apply. Settlement evidence remains automatic; authorized clients choose each fixed invoice’s amount and 14- or 30-day expiry per request. Dashboard stays behind Umbrel login on 22121; private bearer API on 22122 and public LNURL on 21212 remain separate. Never forward port 22122 to the Internet; LAN HTTP is unencrypted. Existing data and integration contracts are preserved.
 submitter: "Rylea Stark"
 submission: https://github.com/RyleaStark/extended-umbrella
