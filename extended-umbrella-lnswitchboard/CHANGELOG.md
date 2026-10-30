@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0.rc43-umbrel.1 — 2026-10-30
+
+- Pin immutable multi-architecture RC43 image `sha256:5cd74eec1df594e221c8b6e9bebb8aa5cac539c30c5555e14b048a16111ed430` from merged source `dbc14a88c38ff827ea7c7c528ddd661289f4be7f` in all four app/init services.
+- Add native **Settings → Machine clients** for fixed domain/webhook provisioning, explicit scopes, safe metadata and confirmed revocation. Copy each token once into your client's secret manager; signing inputs clear on submission/error/cancel and tokens clear on dismissal/tab exit.
+- Show actual client-listener state separately from remote reachability and explain private API port 22122, ownership, revocation limits and unencrypted LAN HTTP. Dashboard/provisioning remain authenticated on 22121; public LNURL remains on 21212. Never Internet-forward 22122.
+- Expose the existing optional **Environment → Security → Allow private webhooks** setting, disabled by default. Enable only for trusted HTTP/private receivers and restart to apply; it affects all webhook delivery.
+- Settlement proof is automatic, not a toggle. Authorized clients choose fixed amount and 14/30-day expiry per request. Existing client/webhook contracts, persistent data, connector images/topology and update-safe hooks are unchanged.
+- Extend the exact published-image gate to require the compiled native settings controls, truthful no-store runtime status, private-webhook setting and status-route exclusion from the client listener. Assert all four app/init image pins match.
+
+
 ## 0.4.0.rc42-umbrel.1 — 2026-10-30
 
 - Pin immutable multi-architecture RC42 image `sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76` from merged source `290fcbbe6c5a4ff8ac98c82eb06176ded4187eb8`.

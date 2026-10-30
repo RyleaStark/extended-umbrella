@@ -56,11 +56,30 @@ for attempt in range(60):
     time.sleep(0.5)
 else:
     raise AssertionError('client-only listener never became ready')
-for path in ('/', '/api/client-credentials', '/api/settings', '/api/health', '/openapi.json', '/.well-known/lnurlp/pay',
+for path in ('/', '/api/client-credentials', '/api/client-credentials/status', '/api/settings', '/api/health', '/openapi.json', '/.well-known/lnurlp/pay',
              '/api/client/v1/%2e%2e/%2e%2e/%2e%2e/index.html', '/api/client/v1/%2e%2e/%2e%2e/%2e%2e/'):
     assert status(path) == 404, path
 assert status('/api/client/v1/addresses/missing', {'Authorization':'Bearer invalid'}) == 401
 # Direct caller cannot spoof a public or private source through forwarding headers.
 assert status('/api/client/v1/addresses/missing', {'X-Forwarded-For':'8.8.8.8'}) == 401
 print('GREEN exact_published_image_client_tcp_auth_and_operator_route_exclusion')
+PY
+# The exact shipped image must include the native settings UI and report a live
+# client listener only through its private administration boundary.
+docker exec -i "$container_id" python - <<'PY'
+import json
+from pathlib import Path
+from urllib.request import urlopen
+with urlopen('http://127.0.0.1:22121/api/client-credentials/status', timeout=3) as response:
+    assert response.headers['Cache-Control'] == 'no-store, private'
+    status = json.load(response)
+assert status == {'enabled': True, 'listening': True, 'host': '0.0.0.0', 'port': 22122, 'allow_private_webhooks': False}, status
+from backend.app.env_settings import ENV_FIELDS
+assert any(field['key'] == 'ALLOW_PRIVATE_WEBHOOKS' and field['editable'] for field in ENV_FIELDS)
+assets = list(Path('/app/frontend/static/assets').glob('settings-*.js'))
+assert assets, 'missing compiled settings UI'
+source = '\n'.join(path.read_text() for path in assets)
+for label in ('Machine clients', 'Provision client', 'Webhook signing secret', 'Done — clear token', 'Confirm revoke'):
+    assert label in source, label
+print('GREEN exact_published_image_native_machine_client_settings_and_live_status')
 PY
