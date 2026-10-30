@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc41@sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc42@sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -13,12 +13,12 @@ root = Path(sys.argv[1])
 compose = yaml.safe_load((root / 'docker-compose.yml').read_text(encoding='utf-8'))
 manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
-assert len(test_scripts) == 34
+assert len(test_scripts) == 35
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc41-umbrel.1'
+assert manifest['version'] == '0.4.0.rc42-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc41@sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc42@sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76'
 assert app['environment']['LNSWITCHBOARD_ENV_FILE'] == '/app/secrets/.env'
 assert app['healthcheck']['start_period'] == '30s'
 assert app['healthcheck']['retries'] == 12
@@ -120,7 +120,7 @@ for pattern in (r'(?i)password\s*[:=]\s*["\']?[^$\s{]', r'(?i)(access|refresh|me
 print('GREEN static_package_security_and_persistence_contract_ok')
 PY
 
-# Validate every application environment key against the exact RC41 runtime contract.
+# Validate every application environment key against the exact RC42 runtime contract.
 docker run --rm -i --platform linux/arm64 \
   -v "$PACKAGE_DIR/docker-compose.yml:/package/docker-compose.yml:ro" \
   --entrypoint python "$APP_IMAGE" - <<'PY'
@@ -142,7 +142,7 @@ for name, field in Settings.model_fields.items():
 compose = yaml.safe_load(Path('/package/docker-compose.yml').read_text(encoding='utf-8'))
 keys = set(compose['services']['lnswitchboard']['environment'])
 unknown = sorted(keys - allowed)
-assert not unknown, f'RC41 ignores package environment keys: {unknown}'
+assert not unknown, f'RC42 ignores package environment keys: {unknown}'
 invalid_redirects = {
     'CLOUDFLARE_OAUTH_REDIRECT_LOOPBACK': [
         'https://admin.example/api/cloudflare/oauth/callback',
@@ -161,14 +161,14 @@ for env_name, values in invalid_redirects.items():
         except ValidationError:
             pass
         else:
-            raise AssertionError(f'RC41 accepted unsafe OAuth redirect {env_name}={value}')
+            raise AssertionError(f'RC42 accepted unsafe OAuth redirect {env_name}={value}')
     os.environ.pop(env_name, None)
-print('GREEN exact_rc41_settings_and_portable_oauth_contract_ok')
+print('GREEN exact_rc42_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = '0f8930c44961a077f8c626b06a6bed4211248ca1' ]
-echo 'GREEN exact_rc41_source_revision_ok'
+[ "$app_revision" = '290fcbbe6c5a4ff8ac98c82eb06176ded4187eb8' ]
+echo 'GREEN exact_rc42_source_revision_ok'
 
 docker run --rm -i \
   -e DEP_ENV=DOCKER \
@@ -209,7 +209,7 @@ async def status_for(client):
 assert asyncio.run(status_for('203.0.113.25')) == 403
 assert asyncio.run(status_for('192.168.50.25')) == 200
 PY
-printf 'GREEN exact_rc41_generic_docker_admin_boundary_is_application_owned\n'
+printf 'GREEN exact_rc42_generic_docker_admin_boundary_is_application_owned\n'
 
 for image in "$APP_IMAGE" "$TAILSCALE_IMAGE" "$MESH_IMAGE"; do
   output=$(docker buildx imagetools inspect "$image")

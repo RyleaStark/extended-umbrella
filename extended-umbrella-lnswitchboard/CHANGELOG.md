@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0.rc42-umbrel.1 — 2026-10-30
+
+- Pin immutable multi-architecture RC42 image `sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76` from merged source `290fcbbe6c5a4ff8ac98c82eb06176ded4187eb8`.
+- Add signed authoritative local-LND settlement evidence and invoice/quote binding without changing outer webhook v1 face-amount or observation-time semantics.
+- Add operator-provisioned scoped clients, stable owned Lightning Addresses, and recoverable 14-/30-day fixed invoices.
+- Publish only the bearer-protected, client-route-only LAN listener on 22122. Dashboard and credential provisioning remain behind Umbrel login on 22121; public LNURL remains on 21212. Do not forward 22122 to the Internet; use encrypted private transport where required.
+- Preserve unresolved payments across downtime/retention, queue settlement notifications transactionally, and protect paid proof from stale polls. Client invoices are excluded from public LNURL verification; unsettled preimages are never disclosed.
+- Preserve existing app identity, data paths, connector topology and update-safe hooks; schema additions are automatic and additive. No live provider authorization or wallet operation is required for installation.
+
 ## 0.4.0.rc41-umbrel.1 — 2026-09-19
 
 - Pin immutable multi-architecture lnSwitchboard RC41 image `sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c` from merged source `0f8930c44961a077f8c626b06a6bed4211248ca1`.

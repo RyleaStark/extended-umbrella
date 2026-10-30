@@ -1,6 +1,6 @@
 services:
   state_migrate:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc41@sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc42@sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76
     container_name: ${APP_ID}_state-migrate
     user: "0:0"
     entrypoint: ["python", "/opt/lnswitchboard/state-migrate.py"]
@@ -24,7 +24,7 @@ services:
     restart: "no"
 
   permissions-init:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc41@sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc42@sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76
     container_name: ${APP_ID}_permissions-init
     depends_on:
       state_migrate:
@@ -69,7 +69,7 @@ services:
     restart: on-failure
 
   lnswitchboard:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc41@sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc42@sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76
     container_name: ${APP_ID}_web
     user: "1000:1000"
     restart: on-failure
@@ -91,6 +91,9 @@ services:
       PUBLIC_BACKEND_SOCKET_PATH: /run/lnswitchboard-public/public.sock
       SERVICE_PORT: "22121"
       PUBLIC_SERVICE_PORT: "21212"
+      CLIENT_API_ENABLED: "true"
+      CLIENT_API_HOST: "0.0.0.0"
+      CLIENT_API_PORT: "22122"
       DEP_ENV: "UMBREL_DEV"
       LND_HOST: "${APP_LIGHTNING_NODE_IP}"
       LND_GRPC_PORT: "10009"
@@ -121,6 +124,8 @@ services:
       - ${APP_DATA_DIR}/data/secrets:/app/secrets
       - ${APP_DATA_DIR}/data/connectors/cloudflare-mesh:/app/secrets/cloudflare-mesh
       - ${APP_DATA_DIR}/data/public-backend:/run/lnswitchboard-public
+    ports:
+      - "22122:22122"
     healthcheck:
       test:
         - CMD
@@ -133,7 +138,7 @@ services:
       start_period: 30s
 
   lnswitchboard-public:
-    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc41@sha256:5edf0faf1b0c6f953a839f03de258f79e9ac7a8af0eb630bd992f021bcedde6c
+    image: ghcr.io/ryleastark/lnswitchboard:0.4.0.rc42@sha256:a9b08c4543df30622d01f06c2b010c50348914cfe35a5333022ba7b2cad42b76
     container_name: ${APP_ID}_public
     user: "1000:1000"
     restart: on-failure
