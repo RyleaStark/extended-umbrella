@@ -27,5 +27,5 @@ jobs:
           set -euo pipefail
           for test in extended-umbrella-lnswitchboard/tests/*.sh; do
             printf '\n=== %s ===\n' "$test"
-            bash "$test"
+            bash -x "$test"
           done
