@@ -30,8 +30,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          fixture_checkout=$(mktemp -d)
+          trap 'sudo rm -rf "$fixture_checkout"' EXIT
+          cp -a . "$fixture_checkout/repository"
+          sudo chown -R 1000:1000 "$fixture_checkout"
           for test in extended-umbrella-lnswitchboard/tests/*.sh; do
             printf '\n=== %s ===\n' "$test"
-            # Umbrel application fixtures require UID 1000; hosted runners use 1001.
-            sudo -u '#1000' -- bash -x "$test"
+            # Stage outside the runner-private home; do not relax its permissions.
+            sudo -u '#1000' -- bash -x "$fixture_checkout/repository/$test"
           done
