@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0.rc44-umbrel.1 — 2026-11-02
+
+- Pin all four app/init services to immutable RC44 index `sha256:e6fa8d4a3cb9877aac083a426a29cf19dfe80d7f8d84070dab844c8a001402c4`, source `29ca7847508a974512c78d77c40feb8fc67fa1a9`; anonymously verified amd64 and arm64 revisions/configs.
+- Add private authoritative `GET /api/client/v1/addresses/:address_id/invoices/:payment_hash` using existing `invoices:create` bearer scope. Exact owned invoice/quote bindings and LND hash, face amount, creation and expiry are checked; settled results use actual paid msat and LND settlement UTC seconds. No invoice creation or secrets in GET.
+- Existing IDs, scopes, tokens and callback routes remain unchanged. Native unsigned callbacks may wake the consumer, but must never credit without a fresh authenticated lookup. No signing header requirement is added.
+- Replace vulnerable lint dependencies with supported native Oxlint, preserving effective policy and adding real CLI regression gates; full dependency audit passes without overrides or exceptions.
+- Add a network-isolated published-image TCP contract probe for open/overpaid/invalid/revoked lookups, public-listener exclusion and no writes. Dashboard 22121, private bearer API 22122 and public LNURL 21212 boundaries remain unchanged. No live installation or provider mutation performed.
+
 ## 0.4.0.rc43-umbrel.1 — 2026-10-30
 
 - Pin immutable multi-architecture RC43 image `sha256:5cd74eec1df594e221c8b6e9bebb8aa5cac539c30c5555e14b048a16111ed430` from merged source `dbc14a88c38ff827ea7c7c528ddd661289f4be7f` in all four app/init services.

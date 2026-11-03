@@ -1,0 +1,41 @@
+name: lnSwitchboard package
+on:
+  pull_request:
+    paths:
+      - 'extended-umbrella-lnswitchboard/**'
+      - '.github/workflows/lnswitchboard-package.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'extended-umbrella-lnswitchboard/**'
+      - '.github/workflows/lnswitchboard-package.yml'
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install YAML parser
+        run: sudo apt-get update && sudo apt-get install -y python3-yaml
+      - name: Prepare supported Umbrel fixture identity
+        shell: bash
+        run: |
+          id -nu 1000 >/dev/null 2>&1 || sudo useradd --uid 1000 --create-home package-fixtures
+          sudo usermod -aG docker "$(id -nu 1000)"
+      - name: Published image and migration contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_checkout=$(mktemp -d)
+          trap 'sudo rm -rf "$fixture_checkout"' EXIT
+          cp -a . "$fixture_checkout/repository"
+          sudo chown -R 1000:1000 "$fixture_checkout"
+          for test in extended-umbrella-lnswitchboard/tests/*.sh; do
+            printf '\n=== %s ===\n' "$test"
+            # Stage outside the runner-private home; do not relax its permissions.
+            sudo -u '#1000' -- bash -x "$fixture_checkout/repository/$test"
+          done

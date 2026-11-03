@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc43@sha256:5cd74eec1df594e221c8b6e9bebb8aa5cac539c30c5555e14b048a16111ed430'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc44@sha256:e6fa8d4a3cb9877aac083a426a29cf19dfe80d7f8d84070dab844c8a001402c4'
 
 docker run --rm -i \
   --user 1000:1000 \
@@ -71,4 +71,4 @@ assert "/.well-known/lnurlp/{username}" in included_paths
 assert main.public_app.routes[-1].path == "/{path:path}"
 PY
 
-printf 'GREEN exact_rc43_public_fallback_policy_ok\n'
+printf 'GREEN exact_rc44_public_fallback_policy_ok\n'

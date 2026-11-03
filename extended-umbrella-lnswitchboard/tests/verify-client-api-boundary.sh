@@ -83,3 +83,14 @@ for label in ('Machine clients', 'Provision client', 'Webhook signing secret', '
     assert label in source, label
 print('GREEN exact_published_image_native_machine_client_settings_and_live_status')
 PY
+
+# Isolated synthetic LND snapshots through the exact image's real TCP apps.
+# Network none prevents any provider/wallet access; all three listeners are loopback.
+docker run --rm -i --network none \
+  --env LND_HOST=127.0.0.1 --env DATA_STORE_PATH=/tmp/synthetic.db \
+  --env CONNECTION_SECRET_KEY_PATH=/tmp/synthetic.key \
+  --env MACAROON_STORE_PATH=/tmp/synthetic-macaroon \
+  --env NOSTR_ZAP_SECRET_PATH=/tmp/synthetic-nostr \
+  --env TRUSTED_HOSTS=127.0.0.1,localhost \
+  --entrypoint python "$APP_IMAGE" - \
+  < "$PACKAGE_DIR/tests/probes/authoritative-invoice-get.py"

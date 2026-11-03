@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PACKAGE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc43@sha256:5cd74eec1df594e221c8b6e9bebb8aa5cac539c30c5555e14b048a16111ed430'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc44@sha256:e6fa8d4a3cb9877aac083a426a29cf19dfe80d7f8d84070dab844c8a001402c4'
 TAILSCALE_IMAGE='tailscale/tailscale:v1.102.2@sha256:321ce041508c19079b57a28b6666c8d81ab0b08accc0a2585b3ab663d557ac24'
 MESH_IMAGE='cloudflare/mesh:2026.7.0@sha256:18fad6d500e8ca48b7e4d5ae1905d65e8a50c1f5f5e21eba020d54d5cbf82571'
 
@@ -15,10 +15,10 @@ manifest = yaml.safe_load((root / 'umbrel-app.yml').read_text(encoding='utf-8'))
 test_scripts = sorted((root / 'tests').glob('*.sh'))
 assert len(test_scripts) == 35
 assert all(path.stat().st_mode & 0o111 for path in test_scripts)
-assert manifest['version'] == '0.4.0.rc43-umbrel.1'
+assert manifest['version'] == '0.4.0.rc44-umbrel.1'
 assert 'version' not in compose
 app = compose['services']['lnswitchboard']
-assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc43@sha256:5cd74eec1df594e221c8b6e9bebb8aa5cac539c30c5555e14b048a16111ed430'
+assert app['image'] == 'ghcr.io/ryleastark/lnswitchboard:0.4.0.rc44@sha256:e6fa8d4a3cb9877aac083a426a29cf19dfe80d7f8d84070dab844c8a001402c4'
 assert app['environment']['LNSWITCHBOARD_ENV_FILE'] == '/app/secrets/.env'
 assert app['healthcheck']['start_period'] == '30s'
 assert app['healthcheck']['retries'] == 12
@@ -164,12 +164,12 @@ for env_name, values in invalid_redirects.items():
         else:
             raise AssertionError(f'RC43 accepted unsafe OAuth redirect {env_name}={value}')
     os.environ.pop(env_name, None)
-print('GREEN exact_rc43_settings_and_portable_oauth_contract_ok')
+print('GREEN exact_rc44_settings_and_portable_oauth_contract_ok')
 PY
 
 app_revision=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$APP_IMAGE")
-[ "$app_revision" = 'dbc14a88c38ff827ea7c7c528ddd661289f4be7f' ]
-echo 'GREEN exact_rc43_source_revision_ok'
+[ "$app_revision" = '29ca7847508a974512c78d77c40feb8fc67fa1a9' ]
+echo 'GREEN exact_rc44_source_revision_ok'
 
 docker run --rm -i \
   -e DEP_ENV=DOCKER \
@@ -210,7 +210,7 @@ async def status_for(client):
 assert asyncio.run(status_for('203.0.113.25')) == 403
 assert asyncio.run(status_for('192.168.50.25')) == 200
 PY
-printf 'GREEN exact_rc43_generic_docker_admin_boundary_is_application_owned\n'
+printf 'GREEN exact_rc44_generic_docker_admin_boundary_is_application_owned\n'
 
 for image in "$APP_IMAGE" "$TAILSCALE_IMAGE" "$MESH_IMAGE"; do
   output=$(docker buildx imagetools inspect "$image")
