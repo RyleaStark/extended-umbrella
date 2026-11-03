@@ -21,11 +21,17 @@ jobs:
           persist-credentials: false
       - name: Install YAML parser
         run: sudo apt-get update && sudo apt-get install -y python3-yaml
+      - name: Prepare supported Umbrel fixture identity
+        shell: bash
+        run: |
+          id -nu 1000 >/dev/null 2>&1 || sudo useradd --uid 1000 --create-home package-fixtures
+          sudo usermod -aG docker "$(id -nu 1000)"
       - name: Published image and migration contracts
         shell: bash
         run: |
           set -euo pipefail
           for test in extended-umbrella-lnswitchboard/tests/*.sh; do
             printf '\n=== %s ===\n' "$test"
-            bash -x "$test"
+            # Umbrel application fixtures require UID 1000; hosted runners use 1001.
+            sudo -u '#1000' -- bash -x "$test"
           done
