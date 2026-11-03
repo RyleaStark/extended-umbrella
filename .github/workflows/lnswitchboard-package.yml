@@ -1,0 +1,31 @@
+name: lnSwitchboard package
+on:
+  pull_request:
+    paths:
+      - 'extended-umbrella-lnswitchboard/**'
+      - '.github/workflows/lnswitchboard-package.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'extended-umbrella-lnswitchboard/**'
+      - '.github/workflows/lnswitchboard-package.yml'
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install YAML parser
+        run: sudo apt-get update && sudo apt-get install -y python3-yaml
+      - name: Published image and migration contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in extended-umbrella-lnswitchboard/tests/*.sh; do
+            printf '\n=== %s ===\n' "$test"
+            bash "$test"
+          done
