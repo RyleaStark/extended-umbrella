@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0.rc45-umbrel.1 — 2026-11-08
+
+- Pin all four services to immutable RC45 index `sha256:23a791495995015dfaf1fa30af1c09f01c9d8cdab5e12dc4ff41ac34bab5f24e` from merged source `1907b961b8b5fdba465413d8c753be0b86ec4302`; anonymously verified amd64 and arm64 image revisions and versions.
+- Add an operator-only adoption API for an existing local Lightning address into a scoped machine client, preserving address ID, webhooks, and historical invoices. An optional reference-hash check on scoped address GET lets a client confirm exact alias ownership without changing existing responses.
+- Adoption alone does not move webhooks or retroactively credit address payments. Existing data paths, client tokens/scopes, listener boundaries, and callback destinations are unchanged by this package update.
+
 ## 0.4.0.rc44-umbrel.1 — 2026-11-02
 
 - Pin all four app/init services to immutable RC44 index `sha256:e6fa8d4a3cb9877aac083a426a29cf19dfe80d7f8d84070dab844c8a001402c4`, source `29ca7847508a974512c78d77c40feb8fc67fa1a9`; anonymously verified amd64 and arm64 revisions/configs.
