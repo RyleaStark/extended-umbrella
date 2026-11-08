@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc30@sha256:27323c9b90dccde55f235ce66fc99526a0e0c1646409dbe7d4888d3ab43cf568'
+APP_IMAGE='ghcr.io/ryleastark/lnswitchboard:0.4.0.rc45@sha256:23a791495995015dfaf1fa30af1c09f01c9d8cdab5e12dc4ff41ac34bab5f24e'
 docker run --rm -i --platform linux/arm64 --entrypoint python "$APP_IMAGE" - <<'PY'
 import asyncio
 import io
@@ -79,7 +79,7 @@ for secret in ('PERSISTED_PATH_SECRET','PERSISTED_QUERY_SECRET','ClassShapedPack
     assert secret not in stream.getvalue(), stream.getvalue()
 
 # Model data persisted by RC16 while the migration marker remains, and prove
-# RC22 re-scrubs the history during rollback/re-upgrade.
+# RC45 re-scrubs the history during rollback/re-upgrade.
 now=datetime.now(tz=timezone.utc).isoformat()
 with sqlite3.connect(db_path) as conn:
     conn.execute(
@@ -106,5 +106,5 @@ with sqlite3.connect(db_path) as conn:
     },sort_keys=True)
 for secret in ('LEGACY_PATH_SECRET','LEGACY_QUERY_SECRET','LEGACY_SIGNATURE_SECRET','LEGACY_EXCEPTION_SECRET','LEGACY_RESPONSE_SECRET','LEGACY_MESSAGE_SECRET','LEGACY_DETAILS_SECRET'):
     assert secret not in legacy, legacy
-print('GREEN exact_rc22_webhook_logs_rescrub_after_rollback')
+print('GREEN exact_rc45_webhook_logs_rescrub_after_rollback')
 PY
